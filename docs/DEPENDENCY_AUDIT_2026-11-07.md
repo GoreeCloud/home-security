@@ -48,6 +48,12 @@ An isolated review worktree explicitly overrides the Tinypool dependency to its 
 
 The same read-only `npm audit --package-lock-only --omit=dev --json` check reported **41** advisory matches on the candidate (0 critical, 12 high, 26 moderate, 3 low), down from **42** before the Tinypool change (16 critical, 12 high, 11 moderate, 3 low). The 15 prior critical-severity Docusaurus chains are still present as lower-severity findings; remaining 12 high and 26 moderate findings remain **OPEN**. This change requires a passing isolated hosted docs installation/compilation and source-integrity regression check before any merge; no camera or production service is involved.
 
+## Targeted OpenAPI minimatch high-advisory candidate (November 7, 2026)
+
+A subsequent read-only audit isolated a **high-severity** match in the root `minimatch@5.1.6` used by the imported `@redocly/openapi-core` documentation toolchain. The official npm registry publishes the fixed ISC-licensed `minimatch@5.1.8`, a patch upgrade compatible with the parent dependency's `^5.0.1` range. A separate review branch applies a **parent-scoped npm override** for `@redocly/openapi-core` only, leaving independent legacy `glob` and `serve-handler` consumers pinned to their existing `minimatch@3.1.5` major. Thus the fix deliberately avoids changing unrelated consumers across a major version boundary.
+
+Using the same `npm audit --package-lock-only --omit=dev --json` query, documentation advisory matches decreased **41 → 40**, including high-severity matches **12 → 11**, with zero critical, 26 moderate, and 3 low. This is a candidate until read-only GitHub-hosted Node 20 and Node 24 documentation builds, web build, and import-integrity regression checks complete. Other high and moderate matches remain OPEN, and the source-only result makes no deployment claim.
+
 ## Release blockers and remediation sequence
 
 1. Treat web and documentation lockfile findings as **open release blockers**. Determine each affected package version, direct/transitive dependency chain, patch release, reachability and compatibility risk before changes.

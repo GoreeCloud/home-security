@@ -129,6 +129,18 @@ def verify_repository(root: Path) -> list[str]:
     if docs_package.get("engines", {}).get("node") != ">=20.0.0":
         problems.append("Docs Node engine must match the fixed Tinypool's Node 20+ support")
 
+    # Restrict this OpenAPI toolchain minimatch fix to the affected parent.
+    # Unrelated older minimatch 3 consumers must keep their existing majors.
+    minimatch_version = docs_lock.get("packages", {}).get("node_modules/minimatch", {}).get("version")
+    if minimatch_version != "5.1.8":
+        problems.append("OpenAPI toolchain must pin reviewed minimatch 5.1.8")
+    redocly_override = docs_package.get("overrides", {}).get("@redocly/openapi-core", {})
+    if redocly_override.get("minimatch") != "5.1.8":
+        problems.append("OpenAPI minimatch fix must be scoped to @redocly/openapi-core")
+    for nested in ("node_modules/glob/node_modules/minimatch", "node_modules/serve-handler/node_modules/minimatch"):
+        if docs_lock.get("packages", {}).get(nested, {}).get("version") != "3.1.5":
+            problems.append("Unreviewed major upgrade of unrelated minimatch consumer: " + nested)
+
     for lock_path in ("web/package-lock.json", "docs/package-lock.json"):
         try:
             lock_data = json.loads(text(lock_path))

@@ -57,6 +57,9 @@
   },
   "overrides": {
     "webpackbar": "7.0.0",
-    "tinypool": "2.1.2"
+    "tinypool": "2.1.2",
+    "@redocly/openapi-core": {
+      "minimatch": "5.1.8"
+    }
   }
 }
