@@ -81,6 +81,18 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(p.read_text() + '\n// "@inkeep/docusaurus"\n')
         self.assertTrue(any("AI dependency" in issue for issue in verify_repository(self.root)))
 
+    def test_detects_vulnerable_openapi_lodash(self):
+        import json
+        p = self.root / "docs/package-lock.json"
+        lock = json.loads(p.read_text())
+        lock["packages"]["node_modules/openapi-to-postmanv2/node_modules/lodash"] = {
+            "version": "4.17.21",
+            "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+            "integrity": "sha512-test",
+        }
+        p.write_text(json.dumps(lock))
+        self.assertTrue(any("vulnerable nested Lodash" in issue for issue in verify_repository(self.root)))
+
     def test_detects_missing_docs_node_matrix(self):
         p = self.root / ".github/workflows/docs-validation.yml"
         p.write_text(p.read_text().replace("node: ['20', '24']", "node: ['24']", 1))
