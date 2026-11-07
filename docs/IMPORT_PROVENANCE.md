@@ -22,6 +22,7 @@ Method: Independent source snapshot and one new root commit, not a mirror, fork,
 - Aligned all six inherited Dependabot ecosystems to the GoreeCloud main branch with weekly schedules.
 - Added a pinned, read-only GitHub Actions import-integrity workflow and offline Python regression tests. Workflow activation and successful hosted execution must be independently verified; no container image is published by these checks.
 - Added docs/SECURITY_BASELINE.md to document specific trust boundaries, current mitigations, and unverified release gates.
+- Follow-up development docs preview removes inherited Frigate site affiliation/promotion and upstream third-party AI search/chat configuration; package manifest and lockfile drop the unneeded AI extension. Local-only docs host is a fail-closed placeholder, not an approved public docs URL or completed full visual rebrand.
 
 ## Gates before a production claim
 

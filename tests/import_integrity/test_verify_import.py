@@ -12,6 +12,7 @@ from scripts.verify_import import REQUIRED_ICONS, verify_repository
 COPY_PATHS = (
     "LICENSE", "TRADEMARK.md", "README.md", "README_CN.md", "docker-compose.yml",
     "docs/IMPORT_PROVENANCE.md", "docs/UPSTREAM-README.md",
+    "docs/docusaurus.config.ts", "docs/package.json", "docs/package-lock.json",
     "web/src/components/Logo.tsx", "web/index.html", "web/login.html",
     ".github/dependabot.yml", ".github/workflows/import-integrity.yml",
     *sorted(REQUIRED_ICONS),
@@ -61,6 +62,21 @@ class ImportIntegrityTests(unittest.TestCase):
         p = self.root / "docker-compose.yml"
         p.write_text(p.read_text().replace("127.0.0.1:1883:1883", "1883:1883"))
         self.assertTrue(any("MQTT" in issue for issue in verify_repository(self.root)))
+
+    def test_rejects_upstream_ai_docs_plugin(self):
+        p = self.root / "docs/docusaurus.config.ts"
+        p.write_text(p.read_text() + "\n// @inkeep/docusaurus/chatButton\n")
+        self.assertTrue(any("upstream docs integration" in issue for issue in verify_repository(self.root)))
+
+    def test_rejects_public_docs_host(self):
+        p = self.root / "docs/docusaurus.config.ts"
+        p.write_text(p.read_text().replace('url: "http://localhost"', 'url: "https://docs.frigate.video"'))
+        self.assertTrue(any("localhost-only preview" in issue for issue in verify_repository(self.root)))
+
+    def test_rejects_docs_ai_manifest_dependency(self):
+        p = self.root / "docs/package.json"
+        p.write_text(p.read_text() + '\n// "@inkeep/docusaurus"\n')
+        self.assertTrue(any("AI dependency" in issue for issue in verify_repository(self.root)))
 
     def test_detects_unbounded_dependabot_prs(self):
         p = self.root / ".github/dependabot.yml"

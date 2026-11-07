@@ -78,6 +78,21 @@ def verify_repository(root: Path) -> list[str]:
     if (root / "docs/static/img/branding/frigate.png").exists():
         problems.append("Proprietary Frigate logo file still distributed")
 
+    docs_config = text("docs/docusaurus.config.ts")
+    if 'title: "GoreeCloud Home Security"' not in docs_config or 'url: "http://localhost"' not in docs_config:
+        problems.append("Imported docs must remain a GoreeCloud-branded, localhost-only preview")
+    for token in ("@inkeep", "inkeepConfig:", "https://docs.frigate.video", "http://demo.frigate.video", "https://frigate.video/plus/"):
+        if token in docs_config:
+            problems.append("Unapproved upstream docs integration or product host: " + token)
+    if '"@inkeep/docusaurus"' in text("docs/package.json"):
+        problems.append("Unapproved external docs AI dependency in package manifest")
+    try:
+        docs_lock = json.loads(text("docs/package-lock.json"))
+        if "node_modules/@inkeep/docusaurus" in docs_lock.get("packages", {}):
+            problems.append("Unapproved external docs AI dependency in lockfile")
+    except json.JSONDecodeError:
+        problems.append("Invalid docs package-lock.json")
+
     workflows = root / ".github/workflows"
     found = {p.name for p in workflows.iterdir() if p.is_file()} if workflows.is_dir() else set()
     if found != ALLOWED_WORKFLOWS:
