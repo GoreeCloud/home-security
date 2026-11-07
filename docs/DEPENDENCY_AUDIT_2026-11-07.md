@@ -22,6 +22,14 @@ The commands query the current npm advisory service. This is a point-in-time ass
 
 The npm audit JSON did not report an API error for either query. These are dependency/advisory findings, not exploit reproductions or counts of direct dependencies. High-severity web findings include axios, zod, postcss, js-yaml, form-data, nanoid, object-path and additional parsing/matching dependencies. The docs findings include critical-severity dependency chains involving Docusaurus and documentation tooling.
 
+## Scoped web lockfile remediation candidate (November 7, 2026)
+
+A separate isolated web worktree used the official npm registry to run `npm audit fix --package-lock-only --ignore-scripts --no-fund --no-progress`. This refreshes **94 locked transitive package versions**, removes **50** previous lockfile package entries and adds **56** entries, while preserving the declared direct dependency ranges in web/package.json. No application dependencies or package lifecycle scripts were installed or executed during lockfile remediation.
+
+A comparable read-only `npm audit --package-lock-only --omit=dev --json` reduced web advisories from **21 (12 high, 9 moderate)** to **8 (4 high, 3 moderate, 1 low)**, with no critical findings and no audit API errors. The remaining findings include high-severity matches involving `zod`, `object-path`, `brace-expansion`, and `picomatch`. Some advertised fixes require semver-major changes and cannot be accepted without separately testing API/component compatibility.
+
+The proposed read-only, no-publish web CI installs the locked packages using `npm ci --ignore-scripts`, explicitly applies only the two inspected inherited Radix compatibility patches with local `patch-package`, and runs TypeScript/Vite build in an ephemeral hosted runner. The source-only import guard and regression suite must pass before this candidate can be merged. A passing build does not certify runtime camera behavior or security clearance.
+
 ## Scoped documentation lockfile remediation candidate (November 7, 2026)
 
 An isolated development worktree ran `npm audit fix --package-lock-only --ignore-scripts --no-fund --no-progress` using the official npm registry. The candidate preserves the declared direct dependency ranges; npm changed **169 locked package versions**, removed **146** package entries and added **36** entries in the transitive dependency graph. No package installation, postinstall script or application code execution occurred during this lockfile resolution.
@@ -47,6 +55,6 @@ The first Docker ecosystem update failed because the inherited /docker directory
 
 ## Evidence limits
 
-The initial audit did not install packages or execute application scripts. The follow-up used lockfile-only `npm audit fix` with lifecycle scripts disabled, without locally installing packages; its effect is a transitive dependency resolution update and **not** proof of safety. No local npm ci, production deployments, camera configuration or new service exposure occurred. Raw npm results were not copied into this public source repository because fix availability and advisory fields are time-sensitive and must be rechecked during remediation.
+The initial advisory baseline was read-only. Both the web and documentation follow-ups resolved lockfiles with npm audit fix in package-lock-only mode and lifecycle scripts disabled, without installing packages locally. Hosted GitHub CI ran isolated installs and compilation with read-only permissions: the web build passed, while the documentation build is still under targeted compatibility validation. Neither the advisories nor the successful compilation represent runtime security clearance. No production deployments, camera configuration, exposed services or live credentials were used. Raw npm advisory responses were not copied into this public repository because they are time-sensitive and must be rechecked during remediation.
 
 See [Initial Security Baseline](SECURITY_BASELINE.md), [Import Provenance](IMPORT_PROVENANCE.md), and [release issue #1](https://github.com/GoreeCloud/home-security/issues/1).

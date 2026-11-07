@@ -1,0 +1,48 @@
+name: Home Security web build (read-only)
+
+on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - 'scripts/verify_import.py'
+      - '.github/workflows/web-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - '.github/workflows/web-validation.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: home-security-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: Locked frontend install and typecheck/build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NPM_CONFIG_REGISTRY: https://registry.npmjs.org
+    steps:
+      - name: Checkout source without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Set up Node without private registries
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install locked frontend without lifecycle scripts
+        working-directory: web
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Apply reviewed local React Radix compatibility patches
+        working-directory: web
+        run: npx --no-install patch-package
+      - name: Typecheck and compile frontend without publishing
+        working-directory: web
+        run: npm run build

@@ -13,7 +13,7 @@ from pathlib import Path
 
 SOURCE_SHA = "c60843cc24d3f08c132ec06eb581aa55e969065f"
 LICENSE_SHA256 = "490bc07296c07845f0c5d0db6760da37e4c21258d0e6e1cfa500ce04bebf1983"
-ALLOWED_WORKFLOWS = {"import-integrity.yml", "docs-validation.yml"}
+ALLOWED_WORKFLOWS = {"import-integrity.yml", "docs-validation.yml", "web-validation.yml"}
 REQUIRED_ICONS = {
     "web/images/branding/favicon.svg",
     "web/images/branding/favicon.ico",
@@ -145,6 +145,11 @@ def verify_repository(root: Path) -> list[str]:
             problems.append(name + ": missing contents read-only permission")
         if "persist-credentials: false" not in source:
             problems.append(name + ": checkout credentials would persist")
+    web_validation = text(".github/workflows/web-validation.yml")
+    for expected in ("npm ci --ignore-scripts", "npx --no-install patch-package", "npm run build", "node-version: '24'"):
+        if expected not in web_validation:
+            problems.append("Web CI missing reviewed dependency/build action: " + expected)
+
     compose = text("docker-compose.yml")
     if "127.0.0.1:1883:1883" not in compose or '- "1883:1883"' in compose:
         problems.append("Unauthenticated development MQTT must bind to host loopback only")
