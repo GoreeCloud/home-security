@@ -86,6 +86,14 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(p.read_text().replace("node: ['20', '24']", "node: ['24']", 1))
         self.assertTrue(any("Docs CI missing" in issue for issue in verify_repository(self.root)))
 
+    def test_detects_unscoped_minimatch_upgrade(self):
+        import json
+        p = self.root / "docs/package-lock.json"
+        d = json.loads(p.read_text())
+        d["packages"]["node_modules/minimatch"]["version"] = "5.1.6"
+        p.write_text(json.dumps(d))
+        self.assertTrue(any("reviewed minimatch" in issue for issue in verify_repository(self.root)))
+
     def test_detects_vulnerable_docs_worker_pool(self):
         import json
         p = self.root / "docs/package-lock.json"
