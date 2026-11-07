@@ -48,6 +48,12 @@ An isolated review worktree explicitly overrides the Tinypool dependency to its 
 
 The same read-only `npm audit --package-lock-only --omit=dev --json` check reported **41** advisory matches on the candidate (0 critical, 12 high, 26 moderate, 3 low), down from **42** before the Tinypool change (16 critical, 12 high, 11 moderate, 3 low). The 15 prior critical-severity Docusaurus chains are still present as lower-severity findings; remaining 12 high and 26 moderate findings remain **OPEN**. This change requires a passing isolated hosted docs installation/compilation and source-integrity regression check before any merge; no camera or production service is involved.
 
+## Targeted OpenAPI minimatch high-advisory candidate (November 7, 2026)
+
+A subsequent read-only audit isolated a **high-severity** match in the root `minimatch@5.1.6` used by the imported `@redocly/openapi-core` documentation toolchain. The official npm registry publishes the fixed ISC-licensed `minimatch@5.1.8`, a patch upgrade compatible with the parent dependency's `^5.0.1` range. A separate review branch applies a **parent-scoped npm override** for `@redocly/openapi-core` only, leaving independent legacy `glob` and `serve-handler` consumers pinned to their existing `minimatch@3.1.5` major. Thus the fix deliberately avoids changing unrelated consumers across a major version boundary.
+
+Using the same `npm audit --package-lock-only --omit=dev --json` query, documentation advisory matches decreased **41 → 40**, including high-severity matches **12 → 11**, with zero critical, 26 moderate, and 3 low. This is a candidate until read-only GitHub-hosted Node 20 and Node 24 documentation builds, web build, and import-integrity regression checks complete. Other high and moderate matches remain OPEN, and the source-only result makes no deployment claim.
+
 ## Targeted OpenAPI transitive Lodash remediation candidate (November 7, 2026)
 
 The imported documentation OpenAPI-to-Postman generator resolved a separate nested `lodash@4.17.21` despite the root lockfile already including `lodash@4.18.1`. The generator declares a compatible `^4.17.21` range. An isolated lockfile-only npm resolution added a *scoped* `openapi-to-postmanv2 > lodash: 4.18.1` override; npm removed the vulnerable nested archive and reuses the root `4.18.1`, preserving the generator's declared major version. The package comes from the official npm registry with SHA-512 integrity, and no lifecycle scripts were executed locally.
@@ -55,6 +61,12 @@ The imported documentation OpenAPI-to-Postman generator resolved a separate nest
 Using the same `npm audit --package-lock-only --omit=dev --json` flags after this scoped change, the candidate returned **40** docs advisory matches (**0 critical, 11 high, 26 moderate, 3 low**), compared with 41 before (**0 critical, 12 high, 26 moderate, 3 low**). The inherited `js-yaml@4.1.0` nested under the OpenAPI generator is still separately vulnerable and has **not** been upgraded; an attempted `js-yaml` override was ineffective and was excluded from this candidate. The 11 high and 26 moderate docs findings remain open.
 
 Validation required before merge: unchanged direct package dependencies; source-integrity and regression tests; isolated GitHub-hosted docs installs/builds on Node 20 and 24 and the separate web build. This is **not** proof of application runtime reachability, documentation accuracy, or production readiness.
+
+## Combined OpenAPI dependency lockfile validation (November 7, 2026)
+
+After [PR #47](https://github.com/GoreeCloud/home-security/pull/47) merged its **parent-scoped minimatch 5.1.8** fix, the separate Lodash correction was merged into that source branch and the package lockfile recalculated with lifecycle scripts disabled. The combined manifest retains both independent scoped overrides and also preserves the earlier Tinypool and WebpackBar compatibility overrides. No unrelated dependency major versions were changed as part of combining these fixes.
+
+A fresh read-only `npm audit --package-lock-only --omit=dev --json` on the combined branch returned **39** documentation advisory-package matches (**0 critical, 10 high, 26 moderate, 3 low**), with no API error; neither the `lodash` nor `minimatch` vulnerable-package match remains. This compares to **41** (**0 critical, 12 high, 26 moderate, 3 low**) immediately before the two OpenAPI fixes. The 10 high and 26 moderate docs findings, 8 web findings, and separate Python/container/runtime assessments remain **OPEN**. The combined branch must pass source-integrity, Node 20/24 documentation and frontend hosted build checks before it can merge; no production system was modified.
 
 ## Release blockers and remediation sequence
 
