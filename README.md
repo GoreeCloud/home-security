@@ -24,6 +24,6 @@ The imported upstream code is licensed under [MIT](LICENSE), with its original c
 
 ## Safety and operations
 
-No cameras are configured, no service is deployed, and no production security validation is claimed. Review authentication, storage retention, camera-network isolation, integration credentials, and dependencies before running. Do not expose camera feeds or admin endpoints publicly without verified protections. Inherited upstream GitHub workflows that can publish containers or run schedules are intentionally omitted; repository Actions is disabled pending GoreeCloud-specific review.
+No cameras are configured, no service is deployed, and no production security validation is claimed. Review authentication, storage retention, camera-network isolation, integration credentials, and dependencies before running. Do not expose camera feeds or admin endpoints publicly without verified protections. The imported development Compose configuration uses an unauthenticated MQTT broker; the host port has been restricted to loopback only and is **not production-safe**. See the [initial security baseline and remaining gates](docs/SECURITY_BASELINE.md). Inherited upstream GitHub workflows that can publish containers or run schedules are intentionally omitted; the new offline integrity workflow has no publishing privileges.
 
 Upstream technical documentation remains available at [docs.frigate.video](https://docs.frigate.video), but is **not** GoreeCloud-specific release documentation.
