@@ -79,6 +79,16 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(p.read_text() + '\n// "@inkeep/docusaurus"\n')
         self.assertTrue(any("AI dependency" in issue for issue in verify_repository(self.root)))
 
+    def test_detects_incompatible_webpackbar_major(self):
+        p = self.root / "docs/package-lock.json"
+        source = p.read_text()
+        assert '"node_modules/webpackbar"' in source
+        import json
+        data = json.loads(source)
+        data["packages"]["node_modules/webpackbar"]["version"] = "6.0.1"
+        p.write_text(json.dumps(data))
+        self.assertTrue(any("Incompatible webpack" in issue for issue in verify_repository(self.root)))
+
     def test_detects_noncanonical_dependency_registry(self):
         p = self.root / "docs/package-lock.json"
         p.write_text(p.read_text().replace("https://registry.npmjs.org/", "https://mirrors.example.invalid/", 1))

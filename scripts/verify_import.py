@@ -93,6 +93,17 @@ def verify_repository(root: Path) -> list[str]:
     except json.JSONDecodeError:
         problems.append("Invalid docs package-lock.json")
 
+    # Webpack 5.106+ rejects WebpackBar 6 ProgressPlugin option forwarding.
+    # Preserve a known-compatible loader until an upstream bundler upgrade is tested.
+    try:
+        webpack = docs_lock["packages"]["node_modules/webpack"]["version"]
+        webpackbar = docs_lock["packages"]["node_modules/webpackbar"]["version"]
+        webpack_parts = [int(part) for part in webpack.split(".")[:2]]
+        if webpack_parts[0] == 5 and webpack_parts[1] >= 106 and int(webpackbar.split(".")[0]) < 7:
+            problems.append("Incompatible webpack 5.106+ and webpackbar 6 progress plugin")
+    except (KeyError, ValueError, IndexError):
+        problems.append("Cannot verify webpack / webpackbar compatibility versions")
+
     for lock_path in ("web/package-lock.json", "docs/package-lock.json"):
         try:
             lock_data = json.loads(text(lock_path))
