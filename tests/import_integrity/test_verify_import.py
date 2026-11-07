@@ -13,8 +13,10 @@ COPY_PATHS = (
     "LICENSE", "TRADEMARK.md", "README.md", "README_CN.md", "docker-compose.yml",
     "docs/IMPORT_PROVENANCE.md", "docs/UPSTREAM-README.md",
     "docs/docusaurus.config.ts", "docs/package.json", "docs/package-lock.json",
+    "docs/plugins/browser-path-polyfill.js",
     "web/src/components/Logo.tsx", "web/index.html", "web/login.html",
     ".github/dependabot.yml", ".github/workflows/import-integrity.yml",
+    ".github/workflows/docs-validation.yml", "web/package-lock.json",
     ".github/workflows/web-validation.yml",
     *sorted(REQUIRED_ICONS),
 )
@@ -78,6 +80,36 @@ class ImportIntegrityTests(unittest.TestCase):
         p = self.root / "docs/package.json"
         p.write_text(p.read_text() + '\n// "@inkeep/docusaurus"\n')
         self.assertTrue(any("AI dependency" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_unreviewed_node_browser_polyfills(self):
+        p = self.root / "docs/plugins/browser-path-polyfill.js"
+        p.write_text(p.read_text() + "\n// crypto: require.resolve('bad')\n")
+        self.assertTrue(any("Unreviewed privileged browser polyfill" in s for s in verify_repository(self.root)))
+
+    def test_detects_incompatible_webpackbar_major(self):
+        p = self.root / "docs/package-lock.json"
+        source = p.read_text()
+        assert '"node_modules/webpackbar"' in source
+        import json
+        data = json.loads(source)
+        data["packages"]["node_modules/webpackbar"]["version"] = "6.0.1"
+        p.write_text(json.dumps(data))
+        self.assertTrue(any("Incompatible webpack" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_noncanonical_dependency_registry(self):
+        p = self.root / "docs/package-lock.json"
+        p.write_text(p.read_text().replace("https://registry.npmjs.org/", "https://mirrors.example.invalid/", 1))
+        self.assertTrue(any("noncanonical dependency source" in s for s in verify_repository(self.root)))
+
+    def test_detects_missing_dependency_integrity(self):
+        p = self.root / "web/package-lock.json"
+        p.write_text(p.read_text().replace('"integrity": "sha512-', '"integrity": "', 1))
+        self.assertTrue(any("missing SHA-512 integrity" in s for s in verify_repository(self.root)))
+
+    def test_rejects_unreviewed_docs_publish(self):
+        p = self.root / ".github/workflows/docs-validation.yml"
+        p.write_text(p.read_text() + "\n# id-token: write\n")
+        self.assertTrue(any("unreviewed privilege" in s for s in verify_repository(self.root)))
 
     def test_detects_missing_frontend_install_safety(self):
         p = self.root / ".github/workflows/web-validation.yml"

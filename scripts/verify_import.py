@@ -13,7 +13,7 @@ from pathlib import Path
 
 SOURCE_SHA = "c60843cc24d3f08c132ec06eb581aa55e969065f"
 LICENSE_SHA256 = "490bc07296c07845f0c5d0db6760da37e4c21258d0e6e1cfa500ce04bebf1983"
-ALLOWED_WORKFLOWS = {"import-integrity.yml", "web-validation.yml"}
+ALLOWED_WORKFLOWS = {"import-integrity.yml", "docs-validation.yml", "web-validation.yml"}
 REQUIRED_ICONS = {
     "web/images/branding/favicon.svg",
     "web/images/branding/favicon.ico",
@@ -92,6 +92,40 @@ def verify_repository(root: Path) -> list[str]:
             problems.append("Unapproved external docs AI dependency in lockfile")
     except json.JSONDecodeError:
         problems.append("Invalid docs package-lock.json")
+
+    # Webpack 5.106+ rejects WebpackBar 6 ProgressPlugin option forwarding.
+    # Preserve a known-compatible loader until an upstream bundler upgrade is tested.
+    try:
+        webpack = docs_lock["packages"]["node_modules/webpack"]["version"]
+        webpackbar = docs_lock["packages"]["node_modules/webpackbar"]["version"]
+        webpack_parts = [int(part) for part in webpack.split(".")[:2]]
+        if webpack_parts[0] == 5 and webpack_parts[1] >= 106 and int(webpackbar.split(".")[0]) < 7:
+            problems.append("Incompatible webpack 5.106+ and webpackbar 6 progress plugin")
+    except (KeyError, ValueError, IndexError):
+        problems.append("Cannot verify webpack / webpackbar compatibility versions")
+
+    # The imported OpenAPI client generator uses node:path from a browser bundle.
+    # Only a browser-safe path fallback is approved, never fs/crypto/process.
+    compat = text("docs/plugins/browser-path-polyfill.js")
+    if 'path: require.resolve("path-browserify")' not in compat:
+        problems.append("Missing narrowly-scoped browser path compatibility fallback")
+    if 'path.resolve(__dirname, "plugins", "browser-path-polyfill")' not in docs_config:
+        problems.append("Docusaurus browser path compatibility plugin is not registered")
+    for unsafe in ("fs: ", "crypto: ", "child_process", "eval(", "exec("):
+        if unsafe in compat:
+            problems.append("Unreviewed privileged browser polyfill: " + unsafe)
+
+    for lock_path in ("web/package-lock.json", "docs/package-lock.json"):
+        try:
+            lock_data = json.loads(text(lock_path))
+            for package, entry in lock_data.get("packages", {}).items():
+                origin = entry.get("resolved")
+                if origin and not origin.startswith("https://registry.npmjs.org/"):
+                    problems.append(lock_path + ": noncanonical dependency source for " + package)
+                if origin and not entry.get("integrity", "").startswith("sha512-"):
+                    problems.append(lock_path + ": missing SHA-512 integrity for " + package)
+        except json.JSONDecodeError:
+            problems.append("Invalid lockfile JSON: " + lock_path)
 
     workflows = root / ".github/workflows"
     found = {p.name for p in workflows.iterdir() if p.is_file()} if workflows.is_dir() else set()

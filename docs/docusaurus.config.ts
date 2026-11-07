@@ -126,6 +126,7 @@ const config: Config = {
     },
   },
   plugins: [
+    path.resolve(__dirname, "plugins", "browser-path-polyfill"),
     path.resolve(__dirname, "plugins", "raw-loader"),
     path.resolve(__dirname, "plugins", "yaml-loader"),
     [
