@@ -22,6 +22,16 @@ The commands query the current npm advisory service. This is a point-in-time ass
 
 The npm audit JSON did not report an API error for either query. These are dependency/advisory findings, not exploit reproductions or counts of direct dependencies. High-severity web findings include axios, zod, postcss, js-yaml, form-data, nanoid, object-path and additional parsing/matching dependencies. The docs findings include critical-severity dependency chains involving Docusaurus and documentation tooling.
 
+## Scoped documentation lockfile remediation candidate (November 7, 2026)
+
+An isolated development worktree ran `npm audit fix --package-lock-only --ignore-scripts --no-fund --no-progress` using the official npm registry. The candidate preserves the declared direct dependency ranges; npm changed **169 locked package versions**, removed **146** package entries and added **36** entries in the transitive dependency graph. No package installation, postinstall script or application code execution occurred during this lockfile resolution.
+
+A follow-up `npm audit --package-lock-only --omit=dev --json` against the candidate returned **42 matches** — **16 critical, 12 high, 11 moderate, 3 low** — compared with the previous **84** (**19 critical, 38 high, 16 moderate, 11 low**). These counts are advisory matches, not exploit proof or an all-clear. The unresolved 28 critical/high matches remain release blockers, and the 21 web matches were not remediated by this docs-only update.
+
+One inherited `@types/js-yaml` tarball resolution pointed to an alternative npm mirror. Its SHA-512 integrity was independently compared with the official npm registry's metadata for the exact version (4.0.9); the candidate switches the URL to the canonical `registry.npmjs.org` tarball without changing the hash. The repository import guard now rejects noncanonical lockfile tarball origins and missing SHA-512 hashes for both web and documentation packages.
+
+**Validation status:** Offline import guard and Python regression tests passed. A dedicated, read-only GitHub-hosted documentation build check is proposed to install with lifecycle scripts disabled and compile in an ephemeral runner. This proposed lockfile is not release-ready until the hosted build is verified, and remaining critical/high advisories still require separate remediation.
+
 ## Release blockers and remediation sequence
 
 1. Treat web and documentation lockfile findings as **open release blockers**. Determine each affected package version, direct/transitive dependency chain, patch release, reachability and compatibility risk before changes.
@@ -37,6 +47,6 @@ The first Docker ecosystem update failed because the inherited /docker directory
 
 ## Evidence limits
 
-No npm install, npm ci, npm audit fix, package scripts, containers, production deployments, camera configuration or network exposure occurred. Raw npm results were not copied into this public source repository because fix availability and advisory fields are time-sensitive and must be rechecked during remediation.
+The initial audit did not install packages or execute application scripts. The follow-up used lockfile-only `npm audit fix` with lifecycle scripts disabled, without locally installing packages; its effect is a transitive dependency resolution update and **not** proof of safety. No local npm ci, production deployments, camera configuration or new service exposure occurred. Raw npm results were not copied into this public source repository because fix availability and advisory fields are time-sensitive and must be rechecked during remediation.
 
 See [Initial Security Baseline](SECURITY_BASELINE.md), [Import Provenance](IMPORT_PROVENANCE.md), and [release issue #1](https://github.com/GoreeCloud/home-security/issues/1).

@@ -13,7 +13,7 @@ from pathlib import Path
 
 SOURCE_SHA = "c60843cc24d3f08c132ec06eb581aa55e969065f"
 LICENSE_SHA256 = "490bc07296c07845f0c5d0db6760da37e4c21258d0e6e1cfa500ce04bebf1983"
-ALLOWED_WORKFLOWS = {"import-integrity.yml"}
+ALLOWED_WORKFLOWS = {"import-integrity.yml", "docs-validation.yml"}
 REQUIRED_ICONS = {
     "web/images/branding/favicon.svg",
     "web/images/branding/favicon.ico",
@@ -92,6 +92,18 @@ def verify_repository(root: Path) -> list[str]:
             problems.append("Unapproved external docs AI dependency in lockfile")
     except json.JSONDecodeError:
         problems.append("Invalid docs package-lock.json")
+
+    for lock_path in ("web/package-lock.json", "docs/package-lock.json"):
+        try:
+            lock_data = json.loads(text(lock_path))
+            for package, entry in lock_data.get("packages", {}).items():
+                origin = entry.get("resolved")
+                if origin and not origin.startswith("https://registry.npmjs.org/"):
+                    problems.append(lock_path + ": noncanonical dependency source for " + package)
+                if origin and not entry.get("integrity", "").startswith("sha512-"):
+                    problems.append(lock_path + ": missing SHA-512 integrity for " + package)
+        except json.JSONDecodeError:
+            problems.append("Invalid lockfile JSON: " + lock_path)
 
     workflows = root / ".github/workflows"
     found = {p.name for p in workflows.iterdir() if p.is_file()} if workflows.is_dir() else set()
