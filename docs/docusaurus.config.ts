@@ -3,24 +3,22 @@ import * as path from "node:path";
 import type { Config, PluginConfig } from "@docusaurus/types";
 import type * as OpenApiPlugin from "docusaurus-plugin-openapi-docs";
 
-// Bump when a new stable release ships
-const STABLE_VERSION = "0.18";
+// Independent development-only preview; no stable GoreeCloud release is implied.
 
 const config: Config = {
-  title: "Frigate",
-  tagline: "NVR With Realtime Object Detection for IP Cameras",
-  url: "https://docs.frigate.video",
+  title: "GoreeCloud Home Security",
+  tagline: "Self-hosted home monitoring — development preview",
+  // Fail closed: do not generate public GoreeCloud doc URLs until an approved docs host exists.
+  url: "http://localhost",
   baseUrl: "/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/branding/favicon.ico",
-  organizationName: "blakeblackshear",
-  projectName: "frigate",
+  organizationName: "GoreeCloud",
+  projectName: "home-security",
   themes: [
     "@docusaurus/theme-mermaid",
     "docusaurus-theme-openapi-docs",
-    "@inkeep/docusaurus/chatButton",
-    "@inkeep/docusaurus/searchBar",
   ],
   markdown: {
     mermaid: true,
@@ -35,54 +33,9 @@ const config: Config = {
     },
   },
   themeConfig: {
-    announcementBar: {
-      id: "frigate_plus",
-      content: `
-        <span style="margin-right: 8px; display: inline-block; animation: pulse 2s infinite;">🚀</span>
-        Get more relevant and accurate detections with Frigate+ models.
-        <a style="margin-left: 12px; padding: 3px 10px; background: #94d2bd; color: #001219; text-decoration: none; border-radius: 4px; font-weight: 500; " target="_blank" rel="noopener noreferrer" href="https://frigate.video/plus/">Learn more</a>
-        <span style="margin-left: 8px; display: inline-block; animation: pulse 2s infinite;">✨</span>
-        <style>
-          @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50%       { transform: scale(1.1); }
-          }
-        </style>`,
-      backgroundColor: "#005f73",
-      textColor: "#e0fbfc",
-      isCloseable: false,
-    },
     docs: {
       sidebar: {
         hideable: true,
-      },
-    },
-    inkeepConfig: {
-      baseSettings: {
-        apiKey: "b1a4c4d73c9b48aa5b3cdae6e4c81f0bb3d1134eeb5a7100",
-        integrationId: "cm6xmhn9h000gs601495fkkdx",
-        organizationId: "org_map2JQEOco8U1ZYY",
-        primaryBrandColor: "#010101",
-      },
-      aiChatSettings: {
-        chatSubjectName: "Frigate",
-        botAvatarSrcUrl: "https://frigate.video/images/favicon.png",
-        getHelpCallToActions: [
-          {
-            name: "GitHub",
-            url: "https://github.com/blakeblackshear/frigate",
-            icon: {
-              builtIn: "FaGithub",
-            },
-          },
-        ],
-        quickQuestions: [
-          "How to configure and setup camera settings?",
-          "How to setup notifications?",
-          "Supported builtin detectors?",
-          "How to restream video feed?",
-          "How can I get sound or audio in my recordings?",
-        ],
       },
     },
     prism: {
@@ -127,18 +80,13 @@ const config: Config = {
       },
     ],
     navbar: {
-      title: "Frigate",
+      title: "GoreeCloud Home Security",
       logo: {
-        alt: "Frigate",
+        alt: "GoreeCloud Home Security",
         src: "img/branding/logo.svg",
         srcDark: "img/branding/logo-dark.svg",
       },
       items: [
-        {
-          href: "https://github.com/blakeblackshear/frigate/releases",
-          label: `${STABLE_VERSION}`,
-          position: "left",
-        },
         {
           to: "/",
           activeBasePath: "docs",
@@ -146,28 +94,13 @@ const config: Config = {
           position: "left",
         },
         {
-          href: "https://frigate.video",
-          label: "Website",
-          position: "right",
-        },
-        {
-          href: "http://demo.frigate.video",
-          label: "Demo",
-          position: "right",
-        },
-        {
-          type: "localeDropdown",
-          position: "right",
-          dropdownItemsAfter: [
-            {
-              label: "简体中文（社区翻译）",
-              href: "https://docs.frigate-cn.video",
-            },
-          ],
-        },
-        {
-          href: "https://github.com/blakeblackshear/frigate",
+          href: "https://github.com/GoreeCloud/home-security",
           label: "GitHub",
+          position: "right",
+        },
+        {
+          href: "https://goreecloud.com",
+          label: "GoreeCloud",
           position: "right",
         },
       ],
@@ -176,20 +109,20 @@ const config: Config = {
       style: "dark",
       links: [
         {
-          title: "Community",
+          title: "Project",
           items: [
             {
-              label: "GitHub",
-              href: "https://github.com/blakeblackshear/frigate",
+              label: "GoreeCloud Home Security",
+              href: "https://github.com/GoreeCloud/home-security",
             },
             {
-              label: "Discussions",
-              href: "https://github.com/blakeblackshear/frigate/discussions",
+              label: "Upstream Frigate NVR (attribution)",
+              href: "https://github.com/blakeblackshear/frigate",
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Frigate, Inc.`,
+      copyright: `GoreeCloud Home Security documentation preview. Source based on Frigate NVR; original © ${new Date().getFullYear()} Frigate, Inc. (MIT).`,
     },
   },
   plugins: [
@@ -225,7 +158,7 @@ const config: Config = {
           sidebarPath: "./sidebars.ts",
           // Please change this to your repo.
           editUrl:
-            "https://github.com/blakeblackshear/frigate/edit/master/docs/",
+            "https://github.com/GoreeCloud/home-security/edit/main/docs/",
           sidebarCollapsible: false,
           docItemComponent: "@theme/ApiItem", // Derived from docusaurus-theme-openapi
         },
