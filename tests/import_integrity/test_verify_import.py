@@ -81,6 +81,19 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(p.read_text() + '\n// "@inkeep/docusaurus"\n')
         self.assertTrue(any("AI dependency" in issue for issue in verify_repository(self.root)))
 
+    def test_detects_missing_docs_node_matrix(self):
+        p = self.root / ".github/workflows/docs-validation.yml"
+        p.write_text(p.read_text().replace("node: ['20', '24']", "node: ['24']", 1))
+        self.assertTrue(any("Docs CI missing" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_vulnerable_docs_worker_pool(self):
+        import json
+        p = self.root / "docs/package-lock.json"
+        d = json.loads(p.read_text())
+        d["packages"]["node_modules/tinypool"]["version"] = "1.1.1"
+        p.write_text(json.dumps(d))
+        self.assertTrue(any("fixed Tinypool" in issue for issue in verify_repository(self.root)))
+
     def test_detects_unreviewed_node_browser_polyfills(self):
         p = self.root / "docs/plugins/browser-path-polyfill.js"
         p.write_text(p.read_text() + "\n// crypto: require.resolve('bad')\n")
