@@ -16,6 +16,13 @@ Method: Independent source snapshot and one new root commit, not a mirror, fork,
 4. Preserved upstream internals, config names, API surface, dependencies, technical docs, and LICENSE to avoid unreviewed compatibility regressions. Original upstream trademark policy remains at TRADEMARK.md.
 5. Retained all other source from the pinned master snapshot except the documented changes.
 
+## Post-import maintenance (November 7, 2026)
+
+- Reviewed the inherited development Compose manifest and restricted the unauthenticated MQTT host binding to loopback; this remains development-only and is not a production security guarantee.
+- Aligned all six inherited Dependabot ecosystems to the GoreeCloud main branch with weekly schedules.
+- Added a pinned, read-only GitHub Actions import-integrity workflow and offline Python regression tests. Workflow activation and successful hosted execution must be independently verified; no container image is published by these checks.
+- Added docs/SECURITY_BASELINE.md to document specific trust boundaries, current mitigations, and unverified release gates.
+
 ## Gates before a production claim
 
 - Review third-party licenses and residual branding, docs, screenshots, metadata, and translations.

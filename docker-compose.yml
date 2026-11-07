@@ -39,6 +39,7 @@ services:
   mqtt:
     container_name: mqtt
     image: eclipse-mosquitto:2.0
-    command: mosquitto -c /mosquitto-no-auth.conf # enable no-auth mode
+    # Development-only broker without authentication. Never expose beyond loopback.
+    command: mosquitto -c /mosquitto-no-auth.conf
     ports:
-      - "1883:1883"
+      - "127.0.0.1:1883:1883"
