@@ -105,6 +105,11 @@ def verify_repository(root: Path) -> list[str]:
         problems.append("All six Dependabot ecosystems must target main")
     if "interval: weekly" not in dependabot:
         problems.append("Reviewed weekly Dependabot cadence missing")
+    limits = re.findall(r"(?m)^\s*open-pull-requests-limit:\s*(\d+)\s*$", dependabot)
+    if len(limits) != 6 or any(int(limit) > 2 for limit in limits):
+        problems.append("Dependabot version-update PR limits exceed approved low-noise cap")
+    if not re.search(r'package-ecosystem:\s*"docker"\s*\n\s*directory:\s*"/docker/main"', dependabot):
+        problems.append("Docker Dependabot updater must point at a directory containing a Dockerfile")
     return problems
 
 def main() -> int:

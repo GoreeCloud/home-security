@@ -35,4 +35,4 @@
 
 Local validation: Python offline source-integrity script and regression tests. These validate documented import invariants and introduced safety checks only. **No runtime cameras, network probes, container builds, dependency installation, or production operations were performed.**
 
-See [import provenance](IMPORT_PROVENANCE.md) and [release gate issue](https://github.com/GoreeCloud/home-security/issues/1) for the running acceptance checklist. Update this document only from verified implementation and acceptance evidence.
+See [import provenance](IMPORT_PROVENANCE.md), [dependency audit (November 7, 2026)](DEPENDENCY_AUDIT_2026-11-07.md) and [release gate issue](https://github.com/GoreeCloud/home-security/issues/1) for the running acceptance checklist. Update this document only from verified implementation and acceptance evidence.
