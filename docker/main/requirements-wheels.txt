@@ -39,7 +39,7 @@ titlecase == 2.4.*
 # Image Manipulation
 numpy == 1.26.*
 opencv-python-headless == 4.11.0.*
-opencv-contrib-python == 4.11.0.*
+opencv-contrib-python == 5.0.0.*
 scipy == 1.16.*
 # OpenVino & ONNX
 openvino == 2025.4.*
