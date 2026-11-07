@@ -104,6 +104,17 @@ def verify_repository(root: Path) -> list[str]:
     except (KeyError, ValueError, IndexError):
         problems.append("Cannot verify webpack / webpackbar compatibility versions")
 
+    # The imported OpenAPI client generator uses node:path from a browser bundle.
+    # Only a browser-safe path fallback is approved, never fs/crypto/process.
+    compat = text("docs/plugins/browser-path-polyfill.js")
+    if 'path: require.resolve("path-browserify")' not in compat:
+        problems.append("Missing narrowly-scoped browser path compatibility fallback")
+    if 'path.resolve(__dirname, "plugins", "browser-path-polyfill")' not in docs_config:
+        problems.append("Docusaurus browser path compatibility plugin is not registered")
+    for unsafe in ("fs: ", "crypto: ", "child_process", "eval(", "exec("):
+        if unsafe in compat:
+            problems.append("Unreviewed privileged browser polyfill: " + unsafe)
+
     for lock_path in ("web/package-lock.json", "docs/package-lock.json"):
         try:
             lock_data = json.loads(text(lock_path))

@@ -13,6 +13,7 @@ COPY_PATHS = (
     "LICENSE", "TRADEMARK.md", "README.md", "README_CN.md", "docker-compose.yml",
     "docs/IMPORT_PROVENANCE.md", "docs/UPSTREAM-README.md",
     "docs/docusaurus.config.ts", "docs/package.json", "docs/package-lock.json",
+    "docs/plugins/browser-path-polyfill.js",
     "web/src/components/Logo.tsx", "web/index.html", "web/login.html",
     ".github/dependabot.yml", ".github/workflows/import-integrity.yml",
     ".github/workflows/docs-validation.yml", "web/package-lock.json",
@@ -78,6 +79,11 @@ class ImportIntegrityTests(unittest.TestCase):
         p = self.root / "docs/package.json"
         p.write_text(p.read_text() + '\n// "@inkeep/docusaurus"\n')
         self.assertTrue(any("AI dependency" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_unreviewed_node_browser_polyfills(self):
+        p = self.root / "docs/plugins/browser-path-polyfill.js"
+        p.write_text(p.read_text() + "\n// crypto: require.resolve('bad')\n")
+        self.assertTrue(any("Unreviewed privileged browser polyfill" in s for s in verify_repository(self.root)))
 
     def test_detects_incompatible_webpackbar_major(self):
         p = self.root / "docs/package-lock.json"
