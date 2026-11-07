@@ -1,0 +1,1 @@
+Temporary neutral camera-symbol assets authored for GoreeCloud Home Security; these are not Frigate trademarks or finalized GoreeCloud UI brand designs. Upstream license and trademark policy remain at the repository root.
