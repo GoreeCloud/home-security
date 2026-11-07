@@ -21,9 +21,13 @@ concurrency:
 
 jobs:
   build:
-    name: Isolated dependency install and documentation compile
+    name: Isolated docs build (Node ${{ matrix.node }})
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '24']
     env:
       NPM_CONFIG_REGISTRY: https://registry.npmjs.org
     steps:
@@ -34,7 +38,7 @@ jobs:
       - name: Set up Node without private registries
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: '24'
+          node-version: ${{ matrix.node }}
           cache: npm
           cache-dependency-path: docs/package-lock.json
       - name: Install locked docs dependencies without lifecycle scripts

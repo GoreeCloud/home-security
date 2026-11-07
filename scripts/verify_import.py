@@ -115,6 +115,20 @@ def verify_repository(root: Path) -> list[str]:
         if unsafe in compat:
             problems.append("Unreviewed privileged browser polyfill: " + unsafe)
 
+    # The original docs Tinypool 1.1.1 is covered by critical RCE advisories.
+    # The validated candidate deliberately overrides Docusaurus' Tinypool major.
+    if docs_lock.get("packages", {}).get("node_modules/tinypool", {}).get("version") != "2.1.2":
+        problems.append("Docs must use verified fixed Tinypool 2.1.2 until a reviewed upstream resolution")
+    try:
+        docs_package = json.loads(text("docs/package.json"))
+    except json.JSONDecodeError:
+        problems.append("Invalid docs/package.json")
+        docs_package = {}
+    if docs_package.get("overrides", {}).get("tinypool") != "2.1.2":
+        problems.append("Docs Tinypool major override is not explicit in package manifest")
+    if docs_package.get("engines", {}).get("node") != ">=20.0.0":
+        problems.append("Docs Node engine must match the fixed Tinypool's Node 20+ support")
+
     for lock_path in ("web/package-lock.json", "docs/package-lock.json"):
         try:
             lock_data = json.loads(text(lock_path))
@@ -145,6 +159,10 @@ def verify_repository(root: Path) -> list[str]:
             problems.append(name + ": missing contents read-only permission")
         if "persist-credentials: false" not in source:
             problems.append(name + ": checkout credentials would persist")
+    docs_validation = text(".github/workflows/docs-validation.yml")
+    for expected in ("node: ['20', '24']", "node-version: ${{ matrix.node }}", "npm ci --ignore-scripts", "npm run build"):
+        if expected not in docs_validation:
+            problems.append("Docs CI missing both supported Node versions or safe build step: " + expected)
     web_validation = text(".github/workflows/web-validation.yml")
     for expected in ("npm ci --ignore-scripts", "npx --no-install patch-package", "npm run build", "node-version: '24'"):
         if expected not in web_validation:
