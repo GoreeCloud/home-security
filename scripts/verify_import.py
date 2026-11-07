@@ -105,6 +105,8 @@ def verify_repository(root: Path) -> list[str]:
         problems.append("All six Dependabot ecosystems must target main")
     if "interval: weekly" not in dependabot:
         problems.append("Reviewed weekly Dependabot cadence missing")
+    if not re.search(r'package-ecosystem:\s*"docker"\s*\n\s*directory:\s*"/docker/main"', dependabot):
+        problems.append("Docker Dependabot updater must point at a directory containing a Dockerfile")
     return problems
 
 def main() -> int:
