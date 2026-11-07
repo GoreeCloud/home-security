@@ -4,31 +4,31 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 2
     target-branch: main
   - package-ecosystem: "docker"
     directory: "/docker/main"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 2
     target-branch: main
   - package-ecosystem: "pip"
     directory: "/docker/main"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 2
     target-branch: main
   - package-ecosystem: "pip"
     directory: "/docker/tensorrt"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 2
     target-branch: main
   - package-ecosystem: "npm"
     directory: "/web"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 2
     target-branch: main
   - package-ecosystem: "npm"
     directory: "/docs"
@@ -36,5 +36,5 @@ updates:
       interval: weekly
     allow:
       - dependency-name: "@docusaurus/*"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 2
     target-branch: main

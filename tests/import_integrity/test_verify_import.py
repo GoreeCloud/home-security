@@ -62,6 +62,11 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(p.read_text().replace("127.0.0.1:1883:1883", "1883:1883"))
         self.assertTrue(any("MQTT" in issue for issue in verify_repository(self.root)))
 
+    def test_detects_unbounded_dependabot_prs(self):
+        p = self.root / ".github/dependabot.yml"
+        p.write_text(p.read_text().replace("open-pull-requests-limit: 2", "open-pull-requests-limit: 10", 1))
+        self.assertTrue(any("low-noise" in issue for issue in verify_repository(self.root)))
+
     def test_detects_nonexistent_docker_dependabot_directory(self):
         p = self.root / ".github/dependabot.yml"
         p.write_text(p.read_text().replace('directory: "/docker/main"', 'directory: "/docker"'))
