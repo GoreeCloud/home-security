@@ -15,6 +15,7 @@ COPY_PATHS = (
     "docs/docusaurus.config.ts", "docs/package.json", "docs/package-lock.json",
     "web/src/components/Logo.tsx", "web/index.html", "web/login.html",
     ".github/dependabot.yml", ".github/workflows/import-integrity.yml",
+    ".github/workflows/web-validation.yml",
     *sorted(REQUIRED_ICONS),
 )
 
@@ -77,6 +78,11 @@ class ImportIntegrityTests(unittest.TestCase):
         p = self.root / "docs/package.json"
         p.write_text(p.read_text() + '\n// "@inkeep/docusaurus"\n')
         self.assertTrue(any("AI dependency" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_frontend_install_safety(self):
+        p = self.root / ".github/workflows/web-validation.yml"
+        p.write_text(p.read_text().replace("npm ci --ignore-scripts", "npm ci", 1))
+        self.assertTrue(any("Web CI missing" in issue for issue in verify_repository(self.root)))
 
     def test_detects_unbounded_dependabot_prs(self):
         p = self.root / ".github/dependabot.yml"

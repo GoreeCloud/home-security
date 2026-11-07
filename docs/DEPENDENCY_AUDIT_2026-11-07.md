@@ -22,6 +22,14 @@ The commands query the current npm advisory service. This is a point-in-time ass
 
 The npm audit JSON did not report an API error for either query. These are dependency/advisory findings, not exploit reproductions or counts of direct dependencies. High-severity web findings include axios, zod, postcss, js-yaml, form-data, nanoid, object-path and additional parsing/matching dependencies. The docs findings include critical-severity dependency chains involving Docusaurus and documentation tooling.
 
+## Scoped web lockfile remediation candidate (November 7, 2026)
+
+A separate isolated web worktree used the official npm registry to run `npm audit fix --package-lock-only --ignore-scripts --no-fund --no-progress`. This refreshes **94 locked transitive package versions**, removes **50** previous lockfile package entries and adds **56** entries, while preserving the declared direct dependency ranges in web/package.json. No application dependencies or package lifecycle scripts were installed or executed during lockfile remediation.
+
+A comparable read-only `npm audit --package-lock-only --omit=dev --json` reduced web advisories from **21 (12 high, 9 moderate)** to **8 (4 high, 3 moderate, 1 low)**, with no critical findings and no audit API errors. The remaining findings include high-severity matches involving `zod`, `object-path`, `brace-expansion`, and `picomatch`. Some advertised fixes require semver-major changes and cannot be accepted without separately testing API/component compatibility.
+
+The proposed read-only, no-publish web CI installs the locked packages using `npm ci --ignore-scripts`, explicitly applies only the two inspected inherited Radix compatibility patches with local `patch-package`, and runs TypeScript/Vite build in an ephemeral hosted runner. The source-only import guard and regression suite must pass before this candidate can be merged. A passing build does not certify runtime camera behavior or security clearance.
+
 ## Release blockers and remediation sequence
 
 1. Treat web and documentation lockfile findings as **open release blockers**. Determine each affected package version, direct/transitive dependency chain, patch release, reachability and compatibility risk before changes.
@@ -37,6 +45,6 @@ The first Docker ecosystem update failed because the inherited /docker directory
 
 ## Evidence limits
 
-No npm install, npm ci, npm audit fix, package scripts, containers, production deployments, camera configuration or network exposure occurred. Raw npm results were not copied into this public source repository because fix availability and advisory fields are time-sensitive and must be rechecked during remediation.
+The initial baseline was read-only; the subsequent web remediation used a lockfile-only npm audit fix with lifecycle scripts disabled. No local package installation, lifecycle scripts, application runtime, production deployments, camera configuration or network exposure occurred. The proposed isolated hosted frontend build remains a separate verification step. Raw npm results were not copied into this public source repository because fix availability and advisory fields are time-sensitive and must be rechecked during remediation.
 
 See [Initial Security Baseline](SECURITY_BASELINE.md), [Import Provenance](IMPORT_PROVENANCE.md), and [release issue #1](https://github.com/GoreeCloud/home-security/issues/1).
