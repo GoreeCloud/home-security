@@ -48,6 +48,14 @@ An isolated review worktree explicitly overrides the Tinypool dependency to its 
 
 The same read-only `npm audit --package-lock-only --omit=dev --json` check reported **41** advisory matches on the candidate (0 critical, 12 high, 26 moderate, 3 low), down from **42** before the Tinypool change (16 critical, 12 high, 11 moderate, 3 low). The 15 prior critical-severity Docusaurus chains are still present as lower-severity findings; remaining 12 high and 26 moderate findings remain **OPEN**. This change requires a passing isolated hosted docs installation/compilation and source-integrity regression check before any merge; no camera or production service is involved.
 
+## Targeted OpenAPI transitive Lodash remediation candidate (November 7, 2026)
+
+The imported documentation OpenAPI-to-Postman generator resolved a separate nested `lodash@4.17.21` despite the root lockfile already including `lodash@4.18.1`. The generator declares a compatible `^4.17.21` range. An isolated lockfile-only npm resolution added a *scoped* `openapi-to-postmanv2 > lodash: 4.18.1` override; npm removed the vulnerable nested archive and reuses the root `4.18.1`, preserving the generator's declared major version. The package comes from the official npm registry with SHA-512 integrity, and no lifecycle scripts were executed locally.
+
+Using the same `npm audit --package-lock-only --omit=dev --json` flags after this scoped change, the candidate returned **40** docs advisory matches (**0 critical, 11 high, 26 moderate, 3 low**), compared with 41 before (**0 critical, 12 high, 26 moderate, 3 low**). The inherited `js-yaml@4.1.0` nested under the OpenAPI generator is still separately vulnerable and has **not** been upgraded; an attempted `js-yaml` override was ineffective and was excluded from this candidate. The 11 high and 26 moderate docs findings remain open.
+
+Validation required before merge: unchanged direct package dependencies; source-integrity and regression tests; isolated GitHub-hosted docs installs/builds on Node 20 and 24 and the separate web build. This is **not** proof of application runtime reachability, documentation accuracy, or production readiness.
+
 ## Release blockers and remediation sequence
 
 1. Treat web and documentation lockfile findings as **open release blockers**. Determine each affected package version, direct/transitive dependency chain, patch release, reachability and compatibility risk before changes.

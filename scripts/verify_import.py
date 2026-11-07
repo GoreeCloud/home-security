@@ -129,6 +129,18 @@ def verify_repository(root: Path) -> list[str]:
     if docs_package.get("engines", {}).get("node") != ">=20.0.0":
         problems.append("Docs Node engine must match the fixed Tinypool's Node 20+ support")
 
+    # OpenAPI-to-Postman's inherited nested lodash 4.17.21 has high advisories.
+    # Require the scoped 4.x-compatible fix, without changing unrelated packages.
+    packages = docs_lock.get("packages", {})
+    lodash = packages.get("node_modules/openapi-to-postmanv2/node_modules/lodash", packages.get("node_modules/lodash", {}))
+    try:
+        if tuple(int(n) for n in lodash.get("version", "").split(".")[:3]) < (4, 18, 1):
+            problems.append("OpenAPI code generator has vulnerable nested Lodash")
+    except ValueError:
+        problems.append("Cannot verify OpenAPI generator Lodash version")
+    if docs_package.get("overrides", {}).get("openapi-to-postmanv2", {}).get("lodash") != "4.18.1":
+        problems.append("OpenAPI generator Lodash security override is missing")
+
     for lock_path in ("web/package-lock.json", "docs/package-lock.json"):
         try:
             lock_data = json.loads(text(lock_path))
