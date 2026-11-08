@@ -117,6 +117,37 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(json.dumps(x))
         self.assertTrue(any("unused sort-by/object-path" in s for s in verify_repository(self.root)))
 
+    def test_rejects_external_algolia_docs_search_activation(self):
+        p = self.root / "docs/docusaurus.config.ts"
+        p.write_text(p.read_text() + "\n  algolia: { apiKey: 'unreviewed' },\n")
+        self.assertTrue(any("GoreeShield approval" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_unreviewed_docsearch_ai_dependency(self):
+        import json
+        p = self.root / "docs/package-lock.json"
+        value = json.loads(p.read_text())
+        value["packages"]["node_modules/ai"] = {"version": "5.0.286"}
+        p.write_text(json.dumps(value))
+        self.assertTrue(any("Unreviewed AI SDK" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_unreviewed_docsearch_version(self):
+        import json
+        p = self.root / "docs/package-lock.json"
+        value = json.loads(p.read_text())
+        for name, entry in value["packages"].items():
+            if name.endswith("/node_modules/@docsearch/react"):
+                entry["version"] = "4.3.2"
+        p.write_text(json.dumps(value))
+        self.assertTrue(any("Unexpected DocSearch" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_removed_docsearch_scope(self):
+        import json
+        p = self.root / "docs/package.json"
+        value = json.loads(p.read_text())
+        del value["overrides"]["@docusaurus/theme-search-algolia"]
+        p.write_text(json.dumps(value))
+        self.assertTrue(any("AI-SDK-free DocSearch" in issue for issue in verify_repository(self.root)))
+
     def test_detects_missing_docs_node_matrix(self):
         p = self.root / ".github/workflows/docs-validation.yml"
         p.write_text(p.read_text().replace("node: ['20', '24']", "node: ['24']", 1))

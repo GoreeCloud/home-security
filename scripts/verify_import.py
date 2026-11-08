@@ -84,6 +84,8 @@ def verify_repository(root: Path) -> list[str]:
     for token in ("@inkeep", "inkeepConfig:", "https://docs.frigate.video", "http://demo.frigate.video", "https://frigate.video/plus/"):
         if token in docs_config:
             problems.append("Unapproved upstream docs integration or product host: " + token)
+    if re.search(r"(?m)^\s*algolia\s*:", docs_config):
+        problems.append("External Algolia documentation search requires GoreeShield approval")
     if '"@inkeep/docusaurus"' in text("docs/package.json"):
         problems.append("Unapproved external docs AI dependency in package manifest")
     try:
@@ -128,6 +130,26 @@ def verify_repository(root: Path) -> list[str]:
         problems.append("Docs Tinypool major override is not explicit in package manifest")
     if docs_package.get("engines", {}).get("node") != ">=20.0.0":
         problems.append("Docs Node engine must match the fixed Tinypool's Node 20+ support")
+
+    # Docusaurus' search theme explicitly accepts DocSearch 3.9 or 4.1+.
+    # Pin its no-AI-SDK v3 dependency instead of the v4 AI assistant chain.
+    docs_search_override = docs_package.get("overrides", {}).get("@docusaurus/theme-search-algolia")
+    if docs_search_override != {"@docsearch/react": "3.9.0"}:
+        problems.append("Docs search must use reviewed AI-SDK-free DocSearch 3.9.0 scope")
+    docs_packages = docs_lock.get("packages", {})
+    docsearch_versions = [
+        entry.get("version") for name, entry in docs_packages.items()
+        if name == "node_modules/@docsearch/react" or name.endswith("/node_modules/@docsearch/react")
+    ]
+    if docsearch_versions != ["3.9.0"]:
+        problems.append("Unexpected DocSearch dependency version or duplicate")
+    for forbidden in (
+        "node_modules/ai", "node_modules/@ai-sdk/react",
+        "node_modules/@ai-sdk/provider-utils", "node_modules/@ai-sdk/gateway",
+        "node_modules/undici", "node_modules/@fastify/busboy",
+    ):
+        if forbidden in docs_packages:
+            problems.append("Unreviewed AI SDK or legacy HTTP client in docs: " + forbidden)
 
     # Restrict this OpenAPI toolchain minimatch fix to the affected parent.
     # Unrelated older minimatch 3 consumers must keep their existing majors.
