@@ -148,6 +148,30 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(json.dumps(value))
         self.assertTrue(any("AI-SDK-free DocSearch" in issue for issue in verify_repository(self.root)))
 
+    def test_detects_reintroduced_openapi_yaml(self):
+        import json
+        p = self.root / "docs/package-lock.json"
+        x = json.loads(p.read_text())
+        x["packages"]["node_modules/openapi-to-postmanv2/node_modules/js-yaml"] = {"version": "4.1.0"}
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("Vulnerable nested OpenAPI js-yaml" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_openapi_yaml_override(self):
+        import json
+        p = self.root / "docs/package.json"
+        x = json.loads(p.read_text())
+        del x["overrides"]["openapi-to-postmanv2"]["js-yaml"]
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("Missing reviewed OpenAPI parent-scoped js-yaml" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_unreviewed_gray_matter_yaml_major(self):
+        import json
+        p = self.root / "docs/package-lock.json"
+        x = json.loads(p.read_text())
+        x["packages"]["node_modules/gray-matter/node_modules/js-yaml"]["version"] = "4.3.2"
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("gray-matter YAML major" in issue for issue in verify_repository(self.root)))
+
     def test_detects_missing_docs_node_matrix(self):
         p = self.root / ".github/workflows/docs-validation.yml"
         p.write_text(p.read_text().replace("node: ['20', '24']", "node: ['24']", 1))
