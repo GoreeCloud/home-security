@@ -17,6 +17,7 @@ COPY_PATHS = (
     "web/src/components/Logo.tsx", "web/index.html", "web/login.html",
     ".github/dependabot.yml", ".github/workflows/import-integrity.yml",
     ".github/workflows/docs-validation.yml", "web/package.json", "web/package-lock.json",
+    "web/src/lib/validation/authSchemas.ts", "web/src/lib/validation/authSchemas.test.ts",
     ".github/workflows/web-validation.yml",
     *sorted(REQUIRED_ICONS),
 )
@@ -195,6 +196,35 @@ class ImportIntegrityTests(unittest.TestCase):
         x["packages"]["node_modules/serialize-javascript"] = {"version": "6.0.2"}
         p.write_text(json.dumps(x))
         self.assertTrue(any("Unexpected docs serialization dependency graph" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_zod_v3_reintroduction(self):
+        import json
+        p = self.root / "web/package-lock.json"
+        x = json.loads(p.read_text())
+        x["packages"]["node_modules/zod"]["version"] = "3.25.76"
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("Zod v4 validation lockfile version mismatch" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_incompatible_form_resolver_v3(self):
+        import json
+        p = self.root / "web/package-lock.json"
+        x = json.loads(p.read_text())
+        x["packages"]["node_modules/@hookform/resolvers"]["version"] = "3.10.0"
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("Zod v4 validation lockfile version mismatch" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_auth_validator_tests(self):
+        p = self.root / "web/src/lib/validation/authSchemas.test.ts"
+        p.write_text("test('fake test', () => {})")
+        self.assertTrue(any("Missing actual shared Zod v4 validation schema test" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disabled_form_schema_ci(self):
+        p = self.root / ".github/workflows/web-validation.yml"
+        p.write_text(p.read_text().replace(
+            "npx --no-install vitest run src/lib/validation/authSchemas.test.ts",
+            "echo no-validation",
+        ))
+        self.assertTrue(any("Web CI missing reviewed dependency/build action" in issue for issue in verify_repository(self.root)))
 
     def test_detects_missing_docs_node_matrix(self):
         p = self.root / ".github/workflows/docs-validation.yml"

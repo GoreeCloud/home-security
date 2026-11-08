@@ -228,6 +228,18 @@ def verify_repository(root: Path) -> list[str]:
             problems.append("Reintroduced unused sort-by/object-path vulnerable dependency chain")
         if web_package.get("dependencies") != web_packages.get("", {}).get("dependencies"):
             problems.append("Web direct dependencies and lockfile root are inconsistent")
+        # Resolver v3 reads ZodError.errors, which Zod v4 no longer exposes.
+        # Require two reviewed, exact package versions and real schema tests.
+        for name, version in (("zod", "4.6.7"), ("@hookform/resolvers", "5.9.2")):
+            if web_package.get("dependencies", {}).get(name) != version:
+                problems.append("Zod v4 validation dependency not pinned: " + name)
+            if web_packages.get("node_modules/" + name, {}).get("version") != version:
+                problems.append("Zod v4 validation lockfile version mismatch: " + name)
+        schema_source = text("web/src/lib/validation/authSchemas.ts")
+        schema_tests = text("web/src/lib/validation/authSchemas.test.ts")
+        for expected in ("createLoginSchema", "createUserSchema", "createRoleSchema"):
+            if expected not in schema_source or expected not in schema_tests:
+                problems.append("Missing actual shared Zod v4 validation schema test: " + expected)
     except (ValueError, KeyError, TypeError):
         problems.append("Unable to validate web security dependencies or JSON manifest")
 
@@ -266,7 +278,7 @@ def verify_repository(root: Path) -> list[str]:
         if expected not in docs_validation:
             problems.append("Docs CI missing both supported Node versions or safe build step: " + expected)
     web_validation = text(".github/workflows/web-validation.yml")
-    for expected in ("npm ci --ignore-scripts", "npx --no-install patch-package", "npm run build", "node-version: '24'"):
+    for expected in ("npm ci --ignore-scripts", "npx --no-install patch-package", "npx --no-install vitest run src/lib/validation/authSchemas.test.ts", "npm run build", "node-version: '24'"):
         if expected not in web_validation:
             problems.append("Web CI missing reviewed dependency/build action: " + expected)
 
