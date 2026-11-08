@@ -78,6 +78,6 @@ tflite_runtime @ https://github.com/feranick/TFlite-builds/releases/download/v2.
 sherpa-onnx==1.12.*
 faster-whisper==1.1.*
 librosa==0.11.*
-soundfile==0.13.*
+soundfile==0.14.*
 # Memory profiling
 memray == 1.15.*
