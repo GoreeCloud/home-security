@@ -17,7 +17,8 @@ COPY_PATHS = (
     "web/src/components/Logo.tsx", "web/index.html", "web/login.html",
     ".github/dependabot.yml", ".github/workflows/import-integrity.yml",
     ".github/workflows/docs-validation.yml", "web/package.json", "web/package-lock.json",
-    ".github/workflows/web-validation.yml",
+    "web/src/lib/validation/authSchemas.ts", "web/src/lib/validation/authSchemas.test.ts",
+    "web/vitest.validation.config.ts", ".github/workflows/web-validation.yml",
     *sorted(REQUIRED_ICONS),
 )
 
@@ -195,6 +196,24 @@ class ImportIntegrityTests(unittest.TestCase):
         x["packages"]["node_modules/serialize-javascript"] = {"version": "6.0.2"}
         p.write_text(json.dumps(x))
         self.assertTrue(any("Unexpected docs serialization dependency graph" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_real_auth_schema_tests(self):
+        p = self.root / "web/src/lib/validation/authSchemas.test.ts"
+        p.write_text("test('no tests here', () => {})")
+        self.assertTrue(any("Missing real auth validation regression test" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_isolated_node_test_config(self):
+        p = self.root / "web/vitest.validation.config.ts"
+        p.write_text(p.read_text().replace('environment: "node"', 'environment: "jsdom"'))
+        self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disabled_auth_validation_ci(self):
+        p = self.root / ".github/workflows/web-validation.yml"
+        p.write_text(p.read_text().replace(
+            "npx --no-install vitest run --config vitest.validation.config.ts",
+            "echo fake-tests",
+        ))
+        self.assertTrue(any("Web CI missing reviewed dependency/build action" in issue for issue in verify_repository(self.root)))
 
     def test_detects_missing_docs_node_matrix(self):
         p = self.root / ".github/workflows/docs-validation.yml"

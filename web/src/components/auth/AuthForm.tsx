@@ -20,6 +20,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { createLoginSchema } from "@/lib/validation/authSchemas";
 import { AuthContext } from "@/context/auth-context";
 import { useTranslation } from "react-i18next";
 import useSWR from "swr";
@@ -40,10 +41,10 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
   const { data } = useSWR("/auth/first_time_login", fetcher);
   const showFirstTimeLink = data?.admin_first_time_login === true;
 
-  const formSchema = z.object({
-    user: z.string().min(1, t("form.errors.usernameRequired")),
-    password: z.string().min(1, t("form.errors.passwordRequired")),
-  });
+  const formSchema = createLoginSchema(
+    t("form.errors.usernameRequired"),
+    t("form.errors.passwordRequired"),
+  );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

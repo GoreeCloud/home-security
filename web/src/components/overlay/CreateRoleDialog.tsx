@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { createRoleSchema } from "@/lib/validation/authSchemas";
 import { Switch } from "@/components/ui/switch";
 import ActivityIndicator from "@/components/indicators/activity-indicator";
 import { useEffect, useState } from "react";
@@ -63,19 +64,11 @@ export default function CreateRoleDialog({
 
   const existingRoles = Object.keys(config.auth?.roles || {});
 
-  const formSchema = z.object({
-    role: z
-      .string()
-      .min(1, t("roles.dialog.form.role.roleIsRequired"))
-      .regex(/^[A-Za-z0-9._]+$/, {
-        message: t("roles.dialog.form.role.roleOnlyInclude"),
-      })
-      .refine((role) => !existingRoles.includes(role), {
-        message: t("roles.dialog.form.role.roleExists"),
-      }),
-    cameras: z
-      .array(z.string())
-      .min(1, t("roles.dialog.form.cameras.required")),
+  const formSchema = createRoleSchema(existingRoles, {
+    roleRequired: t("roles.dialog.form.role.roleIsRequired"),
+    roleOnlyInclude: t("roles.dialog.form.role.roleOnlyInclude"),
+    roleExists: t("roles.dialog.form.role.roleExists"),
+    camerasRequired: t("roles.dialog.form.cameras.required"),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
