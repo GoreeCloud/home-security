@@ -132,7 +132,9 @@ export default function ClassificationModelEditDialog({
       return z.object({
         ...sharedFields,
         motion: z.boolean(),
-        interval: createOptionalClassificationIntervalSchema(t("edit.errors.intervalInvalid")),
+        interval: createOptionalClassificationIntervalSchema(
+          t("edit.errors.intervalInvalid"),
+        ),
         classes: z
           .array(z.string())
           .min(1, t("wizard.step1.errors.classRequired"))
@@ -155,7 +157,11 @@ export default function ClassificationModelEditDialog({
     }
   }, [isObjectModel, t]);
 
-  const form = useForm<z.input<typeof formSchema>, unknown, z.output<typeof formSchema>>({
+  const form = useForm<
+    z.input<typeof formSchema>,
+    unknown,
+    z.output<typeof formSchema>
+  >({
     resolver: zodResolver(formSchema),
     defaultValues: isObjectModel
       ? ({

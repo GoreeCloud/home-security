@@ -17,7 +17,11 @@ import useSWR from "swr";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { createZoneInertiaSchema, createOptionalZoneNumberSchema } from "@/lib/validation/numericSchemas";
+import {
+  createZoneInertiaSchema,
+  createOptionalZoneNumberSchema,
+  hasPositiveZoneLoiteringTime,
+} from "@/lib/validation/numericSchemas";
 import { ZoneFormValuesType, Polygon } from "@/types/canvas";
 import { reviewQueries } from "@/utils/zoneEdutUtil";
 import { Switch } from "../ui/switch";
@@ -294,7 +298,11 @@ export default function ZoneEditPane({
     return profileZone ?? cam.zones[polygon.name];
   }, [polygon, config, editingProfile]);
 
-  const form = useForm<z.input<typeof formSchema>, unknown, z.output<typeof formSchema>>({
+  const form = useForm<
+    z.input<typeof formSchema>,
+    unknown,
+    z.output<typeof formSchema>
+  >({
     resolver: zodResolver(formSchema),
     mode: "onChange",
     defaultValues: {
@@ -787,7 +795,10 @@ export default function ZoneEditPane({
                           const loiteringTime =
                             form.getValues("loitering_time");
 
-                          if (checked && loiteringTime && loiteringTime > 0) {
+                          if (
+                            checked &&
+                            hasPositiveZoneLoiteringTime(loiteringTime)
+                          ) {
                             toast.error(
                               t(
                                 "masksAndZones.zones.speedThreshold.toast.error.loiteringTimeError",

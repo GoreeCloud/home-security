@@ -255,6 +255,7 @@ def verify_repository(root: Path) -> list[str]:
             "createOptionalClassificationIntervalSchema",
             "createZoneInertiaSchema",
             "createOptionalZoneNumberSchema",
+            "hasPositiveZoneLoiteringTime",
         ):
             if builder not in numeric_source or builder not in numeric_tests:
                 problems.append("Missing numeric form coercion regression test: " + builder)

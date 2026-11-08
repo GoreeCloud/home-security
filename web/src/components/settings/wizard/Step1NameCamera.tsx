@@ -108,7 +108,11 @@ export default function Step1NameCamera({
       },
     );
 
-  const form = useForm<z.input<typeof step1FormData>, unknown, z.output<typeof step1FormData>>({
+  const form = useForm<
+    z.input<typeof step1FormData>,
+    unknown,
+    z.output<typeof step1FormData>
+  >({
     resolver: zodResolver(step1FormData),
     defaultValues: {
       cameraName: wizardData.cameraName || "",

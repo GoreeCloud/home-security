@@ -6,6 +6,7 @@ import {
   createOptionalClassificationIntervalSchema,
   createOptionalZoneNumberSchema,
   createZoneInertiaSchema,
+  hasPositiveZoneLoiteringTime,
 } from "./numericSchemas";
 
 const options = {
@@ -69,6 +70,16 @@ describe("zone numeric-or-blank field behavior", () => {
     expect(distance.parse("")).toBe("");
     expect(distance.parse(undefined)).toBeUndefined();
     expect(distance.safeParse("0").success).toBe(false);
+  });
+
+  it("warns only for positive, valid loitering time from raw form text", () => {
+    expect(hasPositiveZoneLoiteringTime("10")).toBe(true);
+    expect(hasPositiveZoneLoiteringTime(10)).toBe(true);
+    expect(hasPositiveZoneLoiteringTime("0")).toBe(false);
+    expect(hasPositiveZoneLoiteringTime("")).toBe(false);
+    expect(hasPositiveZoneLoiteringTime(undefined)).toBe(false);
+    expect(hasPositiveZoneLoiteringTime("invalid")).toBe(false);
+    expect(hasPositiveZoneLoiteringTime("-1")).toBe(false);
   });
 
   it("preserves zero for the existing optional loitering threshold", () => {

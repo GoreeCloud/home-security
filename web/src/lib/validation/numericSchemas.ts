@@ -30,6 +30,14 @@ export function createZoneInertiaSchema(message: string) {
     .or(z.literal(""));
 }
 
+/** Match the zone schema's parsed numeric semantics before showing UI warnings. */
+export function hasPositiveZoneLoiteringTime(
+  value: string | number | undefined,
+): boolean {
+  const result = createOptionalZoneNumberSchema(0, "invalid").safeParse(value);
+  return result.success && typeof result.data === "number" && result.data > 0;
+}
+
 /** Optional zone distances and speed thresholds use a numeric-or-blank UI. */
 export function createOptionalZoneNumberSchema(
   minimum: number,
