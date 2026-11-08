@@ -2,7 +2,7 @@
 
 **Product:** GoreeCloud Home Security, a source-only, attributed Frigate NVR derivative under development.
 
-**Baseline:** The initial November 8 audits used `main` commit `3a211dc868256091d577463db1b09cc44450ca36`. The web dependency remediation was subsequently merged at `1756fe4761779e207781a0387faa68e0e487205b` after all hosted builds passed. The separate documentation search-dependency change described below is a candidate until its own hosted checks pass. These are **time-sensitive npm advisory snapshots**, not proof of exploitable attack paths.
+**Baseline:** The initial November 8 audits used `main` commit `3a211dc868256091d577463db1b09cc44450ca36`. The web dependency remediation was subsequently merged at `1756fe4761779e207781a0387faa68e0e487205b` after all hosted builds passed. The documentation DocSearch and OpenAPI YAML remediations subsequently merged with hosted Node 20/24 and frontend checks passing; the serialization change below remains an unmerged review candidate. These are **time-sensitive npm advisory snapshots**, not proof of exploitable attack paths.
 
 ## Method and scope
 
@@ -17,11 +17,12 @@ Both used the canonical npm registry. The isolated review worktrees used **`npm 
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Docs before PR #51 | 0 | 10 | 26 | 3 | 39 |
 | Docs after merged PR #51 | 0 | 8 | 22 | 3 | 33 |
-| Docs OpenAPI YAML review candidate | 0 | 7 | 22 | 3 | 32 |
+| Docs after merged PR #52 | 0 | 7 | 22 | 3 | 32 |
+| Docs serialization security candidate | 0 | 6 | 20 | 3 | 29 |
 | Web before PR #50 | 0 | 4 | 3 | 1 | 8 |
 | Web after merged PR #50 | 0 | 1 | 2 | 1 | 4 |
 
-All four corresponding npm advisory queries reported no npm API error. The web improvements were merged after the protected source-integrity, frontend build, and docs Node 20/24 build checks passed in [PR #50](https://github.com/GoreeCloud/home-security/pull/50). The docs search-dependency change in [PR #51](https://github.com/GoreeCloud/home-security/pull/51) has since merged after Node 20/24 compilation and other hosted checks passed. The newer scoped OpenAPI YAML correction below remains an **unmerged review candidate** pending its own compatibility checks.
+All listed npm advisory queries reported no npm API error. The web improvements were merged after the protected source-integrity, frontend build, and docs Node 20/24 build checks passed in [PR #50](https://github.com/GoreeCloud/home-security/pull/50). The docs search-dependency change in [PR #51](https://github.com/GoreeCloud/home-security/pull/51) has since merged after Node 20/24 compilation and other hosted checks passed. The scoped OpenAPI YAML correction in [PR #52](https://github.com/GoreeCloud/home-security/pull/52) subsequently merged after the corrected parent-scoped override passed Node 20/24 docs compilation, frontend build and source-integrity checks.
 
 ## Targeted web dependency remediation
 
@@ -46,17 +47,25 @@ The isolated candidate applies a **parent-scoped override** `@docusaurus/theme-s
 
 The read-only npm query reports **33** docs matches (**0 critical, 8 high, 22 moderate, 3 low**) versus **39** on merged main (**0 critical, 10 high, 26 moderate, 3 low**). This is a dependency-reachability reduction by lockfile resolution, **not** an assertion that an external DocSearch or Algolia network call is impossible in a future configuration; the search theme is still present. A new source-integrity regression check rejects enabling an `algolia:` configuration without an explicit GoreeShield review, alongside checks that reject the removed AI/HTTP client dependency chain. The inherited Docusaurus/OpenAPI/Postman chain still produces high findings and may need major-version upgrades.
 
-## Targeted OpenAPI YAML pin security review candidate
+## Targeted OpenAPI YAML pin security remediation — merged PR #52
 
 The imported `openapi-to-postmanv2@5.8.0` package declares **exactly `js-yaml@4.1.0`** rather than an open patch range. The existing docs lockfile separately includes `js-yaml@4.3.2` at root, and the older nested `4.1.0` copy is one high-severity npm advisory-package match. The latest v6 OpenAPI generator publishes newer YAML dependencies but would require a major generator migration.
 
-An isolated review branch uses a parent-scoped override `openapi-to-postmanv2 > js-yaml: 4.3.2` to replace the imported exact-old-version pin. An earlier global `js-yaml@4.1.0` override passed Node 24 compilation but **failed the Node 20 npm 10 `npm ci` gate** (`Missing: js-yaml@4.1.0 from lock file`), so it was replaced before merge. The parent-scoped alternative still requires Node 20 and 24 hosted install/build checks. It does **not** override the distinct `gray-matter` YAML 3.x dependency, change direct OpenAPI generator versions, or execute install scripts. npm lockfile-only resolution removes the older nested copy and preserves official registry SHA-512 integrity. This override changes a version that the generator explicitly pinned; even though the replacement is within YAML major 4, API/behavior compatibility must be validated rather than presumed.
+An isolated review branch uses a parent-scoped override `openapi-to-postmanv2 > js-yaml: 4.3.2` to replace the imported exact-old-version pin. An earlier global `js-yaml@4.1.0` override passed Node 24 compilation but **failed the Node 20 npm 10 `npm ci` gate** (`Missing: js-yaml@4.1.0 from lock file`), so it was replaced before merge. The corrected parent-scoped alternative **passed** both Node 20 and 24 hosted clean-install/documentation builds. It does **not** override the distinct `gray-matter` YAML 3.x dependency, change direct OpenAPI generator versions, or execute install scripts. npm lockfile-only resolution removes the older nested copy and preserves official registry SHA-512 integrity. This override changes a version that the generator explicitly pinned; even though the replacement is within YAML major 4, API/behavior compatibility must be validated rather than presumed.
 
-A fresh read-only `npm audit --package-lock-only --omit=dev --json` returned **32** documentation advisory-package matches (**0 critical, 7 high, 22 moderate, 3 low**), down from **33** (**0 critical, 8 high, 22 moderate, 3 low**) after merged PR #51. The review branch must pass the import guard/regressions, docs Node 20 and 24 installs/compilation, and the separate frontend build prior to any merge. Remaining vulnerabilities and full runtime security acceptance are **OPEN**.
+A fresh read-only `npm audit --package-lock-only --omit=dev --json` returned **32** documentation advisory-package matches (**0 critical, 7 high, 22 moderate, 3 low**), down from **33** (**0 critical, 8 high, 22 moderate, 3 low**) after merged PR #51. [PR #52](https://github.com/GoreeCloud/home-security/pull/52) passed the import guard/regressions, docs Node 20/24 installs/compilation, and the separate frontend build prior to merge. Remaining vulnerabilities and full runtime security acceptance are **OPEN**.
+
+## Scoped docs build serialization security review candidate
+
+The inherited docs build toolchain includes `copy-webpack-plugin@11.0.0` and `css-minimizer-webpack-plugin@5.0.1`. Both declare `serialize-javascript` major 6, leading to vulnerable `serialize-javascript@6.0.2`. The inspected published `serialize-javascript@7.1.3` source is BSD-3-Clause, CommonJS-compatible, requires Node 20+, has no npm runtime dependencies or install-time scripts, and is delivered through the official npm registry with SHA-512 integrity. The major version **may change behavior** and cannot be presumed compatible merely because it shares a CommonJS export.
+
+In an isolated candidate, only those two parent packages have npm scoped overrides selecting `serialize-javascript@7.1.3`. The locked graph removes the vulnerable v6 root package and includes two nested v7.1.3 copies, retaining unrelated webpack and app dependencies. The latest read-only `npm audit --package-lock-only --omit=dev --json` reports **29** docs advisory-package matches (**0 critical, 6 high, 20 moderate, 3 low**) compared with **32** (**0 critical, 7 high, 22 moderate, 3 low**) on merged main. The `serialize-javascript` advisory-package match is no longer present; other high advisories remain.
+
+This candidate requires source-integrity/regression checks and isolated hosted `npm ci --ignore-scripts` builds for docs on Node 20 and Node 24, plus the separate web TypeScript/Vite build, before any merge. No publishing workflow, docs deployment, cameras or production credentials are involved. It is **not** a runtime vulnerability clearance.
 
 ## Remaining documentation dependency exposure
 
-The **baseline** docs lockfile had ten high advisory-package matches; the merged search-dependency fix reduced this to eight, and the **new YAML review candidate** has seven. The remaining findings are principally inherited through Docusaurus/OpenAPI/Postman dependencies including serialization utilities, code generators and their transitive packages. Major-version migrations need isolated functional and compatibility tests. This change deliberately does **not** force an incompatible major upgrade of the HTTP client. No deployed documentation runtime or browser-level privacy result is claimed.
+The **baseline** docs lockfile had ten high advisory-package matches; the merged search-dependency fix reduced this to eight, the merged YAML fix to seven, and the **serialization review candidate** to six. The remaining findings are principally inherited through Docusaurus/OpenAPI/Postman dependencies including OpenAPI/Postman code generators and their transitive packages. Major-version migrations need isolated functional and compatibility tests. This change deliberately does **not** force an incompatible major upgrade of the HTTP client. No deployed documentation runtime or browser-level privacy result is claimed.
 
 ## Acceptance and remaining release gates
 
