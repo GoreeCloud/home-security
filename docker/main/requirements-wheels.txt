@@ -24,7 +24,8 @@ peewee == 3.17.*
 peewee_migrate == 1.14.*
 psutil == 7.1.*
 pydantic == 2.10.*
-git+https://github.com/fbcotter/py3nvml#egg=py3nvml
+# Reviewed BSD-3-Clause upstream source snapshot; pin VCS to immutable commit (see docs/PYTHON_VCS_PIN_REVIEW_2026-11-08.md).
+git+https://github.com/fbcotter/py3nvml@0545dfd39858c1552aaabc52ea3fbcb7f5714853#egg=py3nvml
 pytz == 2025.*
 pyzmq == 26.2.*
 ruamel.yaml == 0.18.*
