@@ -155,8 +155,8 @@ def verify_repository(root: Path) -> list[str]:
     # advisory. Resolve only that old package version to the existing 4.3.2;
     # do not force gray-matter's unrelated 3.x YAML consumer to major 4.
     docs_entries = docs_lock.get("packages", {})
-    if docs_package.get("overrides", {}).get("js-yaml@4.1.0") != "4.3.2":
-        problems.append("Missing reviewed OpenAPI js-yaml 4.1.0 security override")
+    if docs_package.get("overrides", {}).get("openapi-to-postmanv2", {}).get("js-yaml") != "4.3.2":
+        problems.append("Missing reviewed OpenAPI parent-scoped js-yaml security override")
     if docs_entries.get("node_modules/js-yaml", {}).get("version") != "4.3.2":
         problems.append("Unexpected docs root js-yaml version")
     if "node_modules/openapi-to-postmanv2/node_modules/js-yaml" in docs_entries:

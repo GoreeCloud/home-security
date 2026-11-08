@@ -160,9 +160,9 @@ class ImportIntegrityTests(unittest.TestCase):
         import json
         p = self.root / "docs/package.json"
         x = json.loads(p.read_text())
-        del x["overrides"]["js-yaml@4.1.0"]
+        del x["overrides"]["openapi-to-postmanv2"]["js-yaml"]
         p.write_text(json.dumps(x))
-        self.assertTrue(any("Missing reviewed OpenAPI js-yaml" in issue for issue in verify_repository(self.root)))
+        self.assertTrue(any("Missing reviewed OpenAPI parent-scoped js-yaml" in issue for issue in verify_repository(self.root)))
 
     def test_detects_unreviewed_gray_matter_yaml_major(self):
         import json
