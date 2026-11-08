@@ -240,6 +240,9 @@ def verify_repository(root: Path) -> list[str]:
         for expected in ("createLoginSchema", "createUserSchema", "createRoleSchema"):
             if expected not in schema_source or expected not in schema_tests:
                 problems.append("Missing actual shared Zod v4 validation schema test: " + expected)
+        test_config = text("web/vitest.validation.config.ts")
+        if 'environment: "node"' not in test_config or 'include: ["src/lib/validation/authSchemas.test.ts"]' not in test_config:
+            problems.append("Validation tests must use isolated camera-free Node test config")
     except (ValueError, KeyError, TypeError):
         problems.append("Unable to validate web security dependencies or JSON manifest")
 
@@ -278,7 +281,7 @@ def verify_repository(root: Path) -> list[str]:
         if expected not in docs_validation:
             problems.append("Docs CI missing both supported Node versions or safe build step: " + expected)
     web_validation = text(".github/workflows/web-validation.yml")
-    for expected in ("npm ci --ignore-scripts", "npx --no-install patch-package", "npx --no-install vitest run src/lib/validation/authSchemas.test.ts", "npm run build", "node-version: '24'"):
+    for expected in ("npm ci --ignore-scripts", "npx --no-install patch-package", "npx --no-install vitest run --config vitest.validation.config.ts", "npm run build", "node-version: '24'"):
         if expected not in web_validation:
             problems.append("Web CI missing reviewed dependency/build action: " + expected)
 

@@ -20,7 +20,7 @@ For testing the exact schemas used by the UI, the original login, create-user an
 - Create user: valid input; forbidden characters; all-dot usernames; short password; empty confirmation; mismatched confirmation with the error attached to `confirmPassword`.
 - Create role: valid assigned camera; duplicate role; invalid role name; missing assigned camera.
 
-The read-only GitHub web CI is extended to execute these tests using the installed lockfile's Vitest binary, with `--no-install`, before TypeScript/Vite compilation. The source import integrity guard pins both compatible package versions, requires these schema-test files and the CI step, and has four new negative regression cases. All inputs in tests are artificial; no credentials, live users, camera streams or outbound API calls are involved.
+The read-only GitHub web CI is extended to execute these tests using the installed lockfile's Vitest binary, with `--no-install`, before TypeScript/Vite compilation. The first hosted attempt failed because the upstream Vite test configuration referenced an absent `web/__test__/test-setup.ts` file. Rather than masking that issue or constructing a fake setup, the candidate now uses a separate `web/vitest.validation.config.ts` with a pure Node environment and only the reviewed schema test file. This new configuration requires a fresh hosted CI run before the candidate can be accepted. The source import integrity guard pins both compatible package versions, requires these schema-test files and the CI step, and has four new negative regression cases. All inputs in tests are artificial; no credentials, live users, camera streams or outbound API calls are involved.
 
 ## Reproduced advisory results
 

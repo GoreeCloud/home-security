@@ -18,6 +18,7 @@ COPY_PATHS = (
     ".github/dependabot.yml", ".github/workflows/import-integrity.yml",
     ".github/workflows/docs-validation.yml", "web/package.json", "web/package-lock.json",
     "web/src/lib/validation/authSchemas.ts", "web/src/lib/validation/authSchemas.test.ts",
+    "web/vitest.validation.config.ts",
     ".github/workflows/web-validation.yml",
     *sorted(REQUIRED_ICONS),
 )
@@ -221,10 +222,15 @@ class ImportIntegrityTests(unittest.TestCase):
     def test_detects_disabled_form_schema_ci(self):
         p = self.root / ".github/workflows/web-validation.yml"
         p.write_text(p.read_text().replace(
-            "npx --no-install vitest run src/lib/validation/authSchemas.test.ts",
+            "npx --no-install vitest run --config vitest.validation.config.ts",
             "echo no-validation",
         ))
         self.assertTrue(any("Web CI missing reviewed dependency/build action" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_nonisolated_validation_test_config(self):
+        p = self.root / "web/vitest.validation.config.ts"
+        p.write_text(p.read_text().replace('environment: "node"', 'environment: "jsdom"'))
+        self.assertTrue(any("isolated camera-free Node test config" in issue for issue in verify_repository(self.root)))
 
     def test_detects_missing_docs_node_matrix(self):
         p = self.root / ".github/workflows/docs-validation.yml"
