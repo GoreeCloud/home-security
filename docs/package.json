@@ -66,6 +66,7 @@
     },
     "@docusaurus/theme-search-algolia": {
       "@docsearch/react": "3.9.0"
-    }
+    },
+    "js-yaml@4.1.0": "4.3.2"
   }
 }

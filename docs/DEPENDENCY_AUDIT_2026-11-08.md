@@ -15,12 +15,13 @@ Both used the canonical npm registry. The isolated review worktrees used **`npm 
 
 | npm lockfile | Critical | High | Moderate | Low | Total |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Docs on current main | 0 | 10 | 26 | 3 | 39 |
-| Docs search dependency review candidate | 0 | 8 | 22 | 3 | 33 |
+| Docs before PR #51 | 0 | 10 | 26 | 3 | 39 |
+| Docs after merged PR #51 | 0 | 8 | 22 | 3 | 33 |
+| Docs OpenAPI YAML review candidate | 0 | 7 | 22 | 3 | 32 |
 | Web before PR #50 | 0 | 4 | 3 | 1 | 8 |
 | Web after merged PR #50 | 0 | 1 | 2 | 1 | 4 |
 
-All four corresponding npm advisory queries reported no npm API error. The web improvements were merged after the protected source-integrity, frontend build, and docs Node 20/24 build checks passed in [PR #50](https://github.com/GoreeCloud/home-security/pull/50). The independent docs search-dependency improvement remains an **unmerged review candidate** pending its own hosted compilation checks.
+All four corresponding npm advisory queries reported no npm API error. The web improvements were merged after the protected source-integrity, frontend build, and docs Node 20/24 build checks passed in [PR #50](https://github.com/GoreeCloud/home-security/pull/50). The docs search-dependency change in [PR #51](https://github.com/GoreeCloud/home-security/pull/51) has since merged after Node 20/24 compilation and other hosted checks passed. The newer scoped OpenAPI YAML correction below remains an **unmerged review candidate** pending its own compatibility checks.
 
 ## Targeted web dependency remediation
 
@@ -45,9 +46,17 @@ The isolated candidate applies a **parent-scoped override** `@docusaurus/theme-s
 
 The read-only npm query reports **33** docs matches (**0 critical, 8 high, 22 moderate, 3 low**) versus **39** on merged main (**0 critical, 10 high, 26 moderate, 3 low**). This is a dependency-reachability reduction by lockfile resolution, **not** an assertion that an external DocSearch or Algolia network call is impossible in a future configuration; the search theme is still present. A new source-integrity regression check rejects enabling an `algolia:` configuration without an explicit GoreeShield review, alongside checks that reject the removed AI/HTTP client dependency chain. The inherited Docusaurus/OpenAPI/Postman chain still produces high findings and may need major-version upgrades.
 
+## Targeted OpenAPI YAML pin security review candidate
+
+The imported `openapi-to-postmanv2@5.8.0` package declares **exactly `js-yaml@4.1.0`** rather than an open patch range. The existing docs lockfile separately includes `js-yaml@4.3.2` at root, and the older nested `4.1.0` copy is one high-severity npm advisory-package match. The latest v6 OpenAPI generator publishes newer YAML dependencies but would require a major generator migration.
+
+An isolated review branch adds only the npm exact-old-version override `js-yaml@4.1.0 → 4.3.2`. It does **not** override the distinct `gray-matter` YAML 3.x dependency, change direct OpenAPI generator versions, or execute install scripts. npm lockfile-only resolution removes the older nested copy and preserves official registry SHA-512 integrity. This override changes a version that the generator explicitly pinned; even though the replacement is within YAML major 4, API/behavior compatibility must be validated rather than presumed.
+
+A fresh read-only `npm audit --package-lock-only --omit=dev --json` returned **32** documentation advisory-package matches (**0 critical, 7 high, 22 moderate, 3 low**), down from **33** (**0 critical, 8 high, 22 moderate, 3 low**) after merged PR #51. The review branch must pass the import guard/regressions, docs Node 20 and 24 installs/compilation, and the separate frontend build prior to any merge. Remaining vulnerabilities and full runtime security acceptance are **OPEN**.
+
 ## Remaining documentation dependency exposure
 
-The **current main** docs lockfile had ten high advisory-package matches; the **review candidate** has eight, principally through Docusaurus/OpenAPI/Postman dependencies including `js-yaml`, serialization utilities, code generators and their transitive packages. Major-version migrations need isolated functional and compatibility tests. This change deliberately does **not** force an incompatible major upgrade of the HTTP client. No deployed documentation runtime or browser-level privacy result is claimed.
+The **baseline** docs lockfile had ten high advisory-package matches; the merged search-dependency fix reduced this to eight, and the **new YAML review candidate** has seven. The remaining findings are principally inherited through Docusaurus/OpenAPI/Postman dependencies including serialization utilities, code generators and their transitive packages. Major-version migrations need isolated functional and compatibility tests. This change deliberately does **not** force an incompatible major upgrade of the HTTP client. No deployed documentation runtime or browser-level privacy result is claimed.
 
 ## Acceptance and remaining release gates
 

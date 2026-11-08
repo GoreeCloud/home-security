@@ -151,6 +151,19 @@ def verify_repository(root: Path) -> list[str]:
         if forbidden in docs_packages:
             problems.append("Unreviewed AI SDK or legacy HTTP client in docs: " + forbidden)
 
+    # OpenAPI-to-Postman's exact legacy js-yaml 4.1.0 pin carries a high
+    # advisory. Resolve only that old package version to the existing 4.3.2;
+    # do not force gray-matter's unrelated 3.x YAML consumer to major 4.
+    docs_entries = docs_lock.get("packages", {})
+    if docs_package.get("overrides", {}).get("js-yaml@4.1.0") != "4.3.2":
+        problems.append("Missing reviewed OpenAPI js-yaml 4.1.0 security override")
+    if docs_entries.get("node_modules/js-yaml", {}).get("version") != "4.3.2":
+        problems.append("Unexpected docs root js-yaml version")
+    if "node_modules/openapi-to-postmanv2/node_modules/js-yaml" in docs_entries:
+        problems.append("Vulnerable nested OpenAPI js-yaml dependency returned")
+    if docs_entries.get("node_modules/gray-matter/node_modules/js-yaml", {}).get("version", "").split(".")[0] != "3":
+        problems.append("Unreviewed gray-matter YAML major migration")
+
     # Restrict this OpenAPI toolchain minimatch fix to the affected parent.
     # Unrelated older minimatch 3 consumers must keep their existing majors.
     minimatch_version = docs_lock.get("packages", {}).get("node_modules/minimatch", {}).get("version")
