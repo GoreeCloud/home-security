@@ -12,6 +12,7 @@ import { Input } from "../ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { createUserSchema } from "@/lib/validation/authSchemas";
 import ActivityIndicator from "../indicators/activity-indicator";
 import { useEffect, useState, useMemo } from "react";
 import useSWR from "swr";
@@ -75,29 +76,14 @@ export default function CreateUserDialog({
     return Array.from(new Set(["admin", "viewer", ...(existingRoles || [])]));
   }, [config]);
 
-  const formSchema = z
-    .object({
-      user: z
-        .string()
-        .min(1, t("users.dialog.form.usernameIsRequired"))
-        .regex(/^[A-Za-z0-9._]+$/, {
-          message: t("users.dialog.createUser.usernameOnlyInclude"),
-        })
-        .regex(/[^.]/, {
-          message: t("users.dialog.createUser.usernameOnlyDots"),
-        }),
-      password: z
-        .string()
-        .min(12, t("users.dialog.form.password.requirements.length")),
-      confirmPassword: z
-        .string()
-        .min(1, t("users.dialog.createUser.confirmPassword")),
-      role: z.string().min(1),
-    })
-    .refine((data) => data.password === data.confirmPassword, {
-      message: t("users.dialog.form.password.notMatch"),
-      path: ["confirmPassword"],
-    });
+  const formSchema = createUserSchema({
+    usernameRequired: t("users.dialog.form.usernameIsRequired"),
+    usernameOnlyInclude: t("users.dialog.createUser.usernameOnlyInclude"),
+    usernameOnlyDots: t("users.dialog.createUser.usernameOnlyDots"),
+    passwordLength: t("users.dialog.form.password.requirements.length"),
+    confirmPasswordRequired: t("users.dialog.createUser.confirmPassword"),
+    passwordMismatch: t("users.dialog.form.password.notMatch"),
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

@@ -43,6 +43,9 @@ jobs:
       - name: Apply reviewed local React Radix compatibility patches
         working-directory: web
         run: npx --no-install patch-package
+      - name: Test authentication, user and role validation with the installed Zod resolver
+        working-directory: web
+        run: npx --no-install vitest run --config vitest.validation.config.ts
       - name: Typecheck and compile frontend without publishing
         working-directory: web
         run: npm run build

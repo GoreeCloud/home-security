@@ -228,6 +228,15 @@ def verify_repository(root: Path) -> list[str]:
             problems.append("Reintroduced unused sort-by/object-path vulnerable dependency chain")
         if web_package.get("dependencies") != web_packages.get("", {}).get("dependencies"):
             problems.append("Web direct dependencies and lockfile root are inconsistent")
+        # Preserve test coverage independently of the unfinished Zod 4 upgrade.
+        schema_source = text("web/src/lib/validation/authSchemas.ts")
+        schema_tests = text("web/src/lib/validation/authSchemas.test.ts")
+        for builder in ("createLoginSchema", "createUserSchema", "createRoleSchema"):
+            if builder not in schema_source or builder not in schema_tests:
+                problems.append("Missing real auth validation regression test: " + builder)
+        test_config = text("web/vitest.validation.config.ts")
+        if 'environment: "node"' not in test_config or 'include: ["src/lib/validation/authSchemas.test.ts"]' not in test_config:
+            problems.append("Validation tests must run with the isolated Node-only config")
     except (ValueError, KeyError, TypeError):
         problems.append("Unable to validate web security dependencies or JSON manifest")
 
@@ -266,7 +275,7 @@ def verify_repository(root: Path) -> list[str]:
         if expected not in docs_validation:
             problems.append("Docs CI missing both supported Node versions or safe build step: " + expected)
     web_validation = text(".github/workflows/web-validation.yml")
-    for expected in ("npm ci --ignore-scripts", "npx --no-install patch-package", "npm run build", "node-version: '24'"):
+    for expected in ("npm ci --ignore-scripts", "npx --no-install patch-package", "npx --no-install vitest run --config vitest.validation.config.ts", "npm run build", "node-version: '24'"):
         if expected not in web_validation:
             problems.append("Web CI missing reviewed dependency/build action: " + expected)
 
