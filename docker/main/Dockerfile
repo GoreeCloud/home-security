@@ -93,7 +93,8 @@ RUN apt-get -qq update \
 # Get OpenVino Model
 RUN --mount=type=bind,source=docker/main/build_ov_model.py,target=/build_ov_model.py \
     mkdir /models && cd /models \
-    && wget http://download.tensorflow.org/models/object_detection/ssdlite_mobilenet_v2_coco_2018_05_09.tar.gz \
+    && wget --https-only -q -O ssdlite_mobilenet_v2_coco_2018_05_09.tar.gz "https://storage.openvinotoolkit.org/repositories/open_model_zoo/public/2022.1/ssdlite_mobilenet_v2/ssdlite_mobilenet_v2_coco_2018_05_09.tar.gz" \
+    && echo "8e205630237f1913ac0ed623d48798f1fa03a9e95c467bd149eb5f6107e704a8131cdb0a72fcf6517dafa0ff47d32a4e  ssdlite_mobilenet_v2_coco_2018_05_09.tar.gz" | sha384sum --check --status \
     && tar -xvf ssdlite_mobilenet_v2_coco_2018_05_09.tar.gz \
     && python3 /build_ov_model.py
 

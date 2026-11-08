@@ -228,21 +228,36 @@ def verify_repository(root: Path) -> list[str]:
             problems.append("Reintroduced unused sort-by/object-path vulnerable dependency chain")
         if web_package.get("dependencies") != web_packages.get("", {}).get("dependencies"):
             problems.append("Web direct dependencies and lockfile root are inconsistent")
-        # Resolver v3 reads ZodError.errors, which Zod v4 no longer exposes.
-        # Require two reviewed, exact package versions and real schema tests.
+        # The Zod 3 resolver reads the removed ZodError.errors property.
+        # Keep the reviewed Zod 4 + resolver 5 pair pinned together.
         for name, version in (("zod", "4.6.7"), ("@hookform/resolvers", "5.9.2")):
             if web_package.get("dependencies", {}).get(name) != version:
-                problems.append("Zod v4 validation dependency not pinned: " + name)
+                problems.append("Zod 4 package pair manifest drift: " + name)
             if web_packages.get("node_modules/" + name, {}).get("version") != version:
-                problems.append("Zod v4 validation lockfile version mismatch: " + name)
+                problems.append("Zod 4 package pair lockfile drift: " + name)
+        # Preserve test coverage independently of the unfinished Zod 4 upgrade.
         schema_source = text("web/src/lib/validation/authSchemas.ts")
         schema_tests = text("web/src/lib/validation/authSchemas.test.ts")
-        for expected in ("createLoginSchema", "createUserSchema", "createRoleSchema"):
-            if expected not in schema_source or expected not in schema_tests:
-                problems.append("Missing actual shared Zod v4 validation schema test: " + expected)
+        for builder in ("createLoginSchema", "createUserSchema", "createRoleSchema"):
+            if builder not in schema_source or builder not in schema_tests:
+                problems.append("Missing real auth validation regression test: " + builder)
         test_config = text("web/vitest.validation.config.ts")
-        if 'environment: "node"' not in test_config or 'include: ["src/lib/validation/authSchemas.test.ts"]' not in test_config:
-            problems.append("Validation tests must use isolated camera-free Node test config")
+        if (
+            'environment: "node"' not in test_config
+            or "authSchemas.test.ts" not in test_config
+            or "numericSchemas.test.ts" not in test_config
+        ):
+            problems.append("Validation tests must run with the isolated Node-only config")
+        numeric_source = text("web/src/lib/validation/numericSchemas.ts")
+        numeric_tests = text("web/src/lib/validation/numericSchemas.test.ts")
+        for builder in (
+            "createOnvifPortSchema",
+            "createOptionalClassificationIntervalSchema",
+            "createZoneInertiaSchema",
+            "createOptionalZoneNumberSchema",
+        ):
+            if builder not in numeric_source or builder not in numeric_tests:
+                problems.append("Missing numeric form coercion regression test: " + builder)
     except (ValueError, KeyError, TypeError):
         problems.append("Unable to validate web security dependencies or JSON manifest")
 

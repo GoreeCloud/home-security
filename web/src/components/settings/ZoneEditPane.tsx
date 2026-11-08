@@ -17,6 +17,7 @@ import useSWR from "swr";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { createZoneInertiaSchema, createOptionalZoneNumberSchema } from "@/lib/validation/numericSchemas";
 import { ZoneFormValuesType, Polygon } from "@/types/canvas";
 import { reviewQueries } from "@/utils/zoneEdutUtil";
 import { Switch } from "../ui/switch";
@@ -218,21 +219,13 @@ export default function ZoneEditPane({
           },
         ),
       enabled: z.boolean().default(true),
-      inertia: z.coerce
-        .number()
-        .min(1, {
-          message: t("masksAndZones.form.inertia.error.mustBeAboveZero"),
-        })
-        .or(z.literal("")),
-      loitering_time: z.coerce
-        .number()
-        .min(0, {
-          message: t(
-            "masksAndZones.form.loiteringTime.error.mustBeGreaterOrEqualZero",
-          ),
-        })
-        .optional()
-        .or(z.literal("")),
+      inertia: createZoneInertiaSchema(
+        t("masksAndZones.form.inertia.error.mustBeAboveZero"),
+      ),
+      loitering_time: createOptionalZoneNumberSchema(
+        0,
+        t("masksAndZones.form.loiteringTime.error.mustBeGreaterOrEqualZero"),
+      ),
       isFinished: z.boolean().refine((val) => val === true, {
         message: t("masksAndZones.form.polygonDrawing.error.mustBeFinished"),
       }),
@@ -240,41 +233,26 @@ export default function ZoneEditPane({
       review_alerts: z.boolean().default(false).optional(),
       review_detections: z.boolean().default(false).optional(),
       speedEstimation: z.boolean().default(false),
-      lineA: z.coerce
-        .number()
-        .min(0.1, {
-          message: t("masksAndZones.form.distance.error.text"),
-        })
-        .optional()
-        .or(z.literal("")),
-      lineB: z.coerce
-        .number()
-        .min(0.1, {
-          message: t("masksAndZones.form.distance.error.text"),
-        })
-        .optional()
-        .or(z.literal("")),
-      lineC: z.coerce
-        .number()
-        .min(0.1, {
-          message: t("masksAndZones.form.distance.error.text"),
-        })
-        .optional()
-        .or(z.literal("")),
-      lineD: z.coerce
-        .number()
-        .min(0.1, {
-          message: t("masksAndZones.form.distance.error.text"),
-        })
-        .optional()
-        .or(z.literal("")),
-      speed_threshold: z.coerce
-        .number()
-        .min(0.1, {
-          message: t("masksAndZones.form.speed.error.mustBeGreaterOrEqualTo"),
-        })
-        .optional()
-        .or(z.literal("")),
+      lineA: createOptionalZoneNumberSchema(
+        0.1,
+        t("masksAndZones.form.distance.error.text"),
+      ),
+      lineB: createOptionalZoneNumberSchema(
+        0.1,
+        t("masksAndZones.form.distance.error.text"),
+      ),
+      lineC: createOptionalZoneNumberSchema(
+        0.1,
+        t("masksAndZones.form.distance.error.text"),
+      ),
+      lineD: createOptionalZoneNumberSchema(
+        0.1,
+        t("masksAndZones.form.distance.error.text"),
+      ),
+      speed_threshold: createOptionalZoneNumberSchema(
+        0.1,
+        t("masksAndZones.form.speed.error.mustBeGreaterOrEqualTo"),
+      ),
     })
     .refine(
       (data) => {
@@ -316,7 +294,7 @@ export default function ZoneEditPane({
     return profileZone ?? cam.zones[polygon.name];
   }, [polygon, config, editingProfile]);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<z.input<typeof formSchema>, unknown, z.output<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
     defaultValues: {
