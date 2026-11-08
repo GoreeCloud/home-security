@@ -1,7 +1,7 @@
 # Zod 4 Form Validation Compatibility Review — November 8, 2026
 
 **Product:** GoreeCloud Home Security (attributed Frigate NVR source import, unreleased)
-**Current merge baseline:** public main `06da62e7d5f17ac9cc90619c0b944de807c92f76` ([PR #57](https://github.com/GoreeCloud/home-security/pull/57) moved the ten working Zod 3 form tests into main). The earlier isolated Zod 4 audit was first compared with `a40d4ae`; dependency versions on main remain unchanged.
+**Current merge baseline:** public main `d0b64af4c78fe069cd5f52ffc57e409aee36989a` ([PR #57](https://github.com/GoreeCloud/home-security/pull/57) moved the ten working Zod 3 form tests into main; [PR #58](https://github.com/GoreeCloud/home-security/pull/58) added verified external wheel hash pins). The earlier isolated Zod 4 audit was first compared with `a40d4ae`; Zod dependency versions on main remain unchanged.
 **Status:** isolated review branch only; no production acceptance or deployment
 
 ## Security motivation and compatibility risk
