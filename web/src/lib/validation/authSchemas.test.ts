@@ -5,6 +5,8 @@ import {
   createRoleSchema,
   createUserSchema,
   createSetPasswordSchema,
+  createPasswordChangeSchema,
+  createPasswordResetSchema,
   createRoleCameraAccessSchema,
 } from "./authSchemas";
 
@@ -148,7 +150,7 @@ describe("role creation schema and resolver", () => {
 });
 
 describe("self-service password change schema", () => {
-  const schema = createSetPasswordSchema(true, {
+  const schema = createPasswordChangeSchema({
     passwordLength: "New password is too short",
     oldPasswordRequired: "Current password is required",
     passwordsDoNotMatch: "New passwords do not match",
@@ -198,7 +200,7 @@ describe("self-service password change schema", () => {
 });
 
 describe("administrative password reset schema", () => {
-  const schema = createSetPasswordSchema(false, {
+  const schema = createPasswordResetSchema({
     passwordLength: "New password is too short",
     oldPasswordRequired: "Current password is required",
     passwordsDoNotMatch: "New passwords do not match",
@@ -221,6 +223,32 @@ describe("administrative password reset schema", () => {
       options,
     );
     expect(result.errors.password?.message).toBe("New password is too short");
+  });
+});
+
+describe("conditional password dialog dispatch", () => {
+  const messages = {
+    passwordLength: "Password must be at least 12 characters",
+    oldPasswordRequired: "Current password is required",
+    passwordsDoNotMatch: "Passwords do not match",
+  };
+
+  it("enforces current password on self-service changes", () => {
+    const schema = createSetPasswordSchema(true, messages);
+    const data = {
+      password: "NewSyntheticP@ss123",
+      confirmPassword: "NewSyntheticP@ss123",
+    };
+    expect(schema.safeParse(data).success).toBe(false);
+  });
+
+  it("allows an administrator reset without the current password", () => {
+    const schema = createSetPasswordSchema(false, messages);
+    const data = {
+      password: "NewSyntheticP@ss123",
+      confirmPassword: "NewSyntheticP@ss123",
+    };
+    expect(schema.safeParse(data).success).toBe(true);
   });
 });
 

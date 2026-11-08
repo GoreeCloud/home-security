@@ -243,6 +243,8 @@ def verify_repository(root: Path) -> list[str]:
             "createUserSchema",
             "createRoleSchema",
             "createSetPasswordSchema",
+            "createPasswordChangeSchema",
+            "createPasswordResetSchema",
             "createRoleCameraAccessSchema",
         ):
             if builder not in schema_source or builder not in schema_tests:

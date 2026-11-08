@@ -67,34 +67,41 @@ export type SetPasswordMessages = {
   passwordsDoNotMatch: string;
 };
 
-/** Password changes require the existing password; admin resets do not. */
-export function createSetPasswordSchema(
-  requireOldPassword: boolean,
-  messages: SetPasswordMessages,
-) {
-  const commonFields = {
-    password: z.string().min(12, messages.passwordLength),
-    confirmPassword: z.string(),
-  };
-
-  if (requireOldPassword) {
-    return z
-      .object({
-        oldPassword: z.string().min(1, messages.oldPasswordRequired),
-        ...commonFields,
-      })
-      .refine((data) => data.password === data.confirmPassword, {
-        message: messages.passwordsDoNotMatch,
-        path: ["confirmPassword"],
-      });
-  }
-
+/** Self-service password changes require proof of the current password. */
+export function createPasswordChangeSchema(messages: SetPasswordMessages) {
   return z
-    .object(commonFields)
+    .object({
+      oldPassword: z.string().min(1, messages.oldPasswordRequired),
+      password: z.string().min(12, messages.passwordLength),
+      confirmPassword: z.string(),
+    })
     .refine((data) => data.password === data.confirmPassword, {
       message: messages.passwordsDoNotMatch,
       path: ["confirmPassword"],
     });
+}
+
+/** Administrative password resets do not require the user's old password. */
+export function createPasswordResetSchema(messages: SetPasswordMessages) {
+  return z
+    .object({
+      password: z.string().min(12, messages.passwordLength),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: messages.passwordsDoNotMatch,
+      path: ["confirmPassword"],
+    });
+}
+
+/** Runtime UI branch delegates to the same explicitly typed, tested schemas. */
+export function createSetPasswordSchema(
+  requireOldPassword: boolean,
+  messages: SetPasswordMessages,
+) {
+  return requireOldPassword
+    ? createPasswordChangeSchema(messages)
+    : createPasswordResetSchema(messages);
 }
 
 /** A role must retain at least one camera selection. */
