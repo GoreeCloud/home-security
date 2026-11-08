@@ -16,7 +16,7 @@ COPY_PATHS = (
     "docs/plugins/browser-path-polyfill.js",
     "web/src/components/Logo.tsx", "web/index.html", "web/login.html",
     ".github/dependabot.yml", ".github/workflows/import-integrity.yml",
-    ".github/workflows/docs-validation.yml", "web/package-lock.json",
+    ".github/workflows/docs-validation.yml", "web/package.json", "web/package-lock.json",
     ".github/workflows/web-validation.yml",
     *sorted(REQUIRED_ICONS),
 )
@@ -92,6 +92,30 @@ class ImportIntegrityTests(unittest.TestCase):
         }
         p.write_text(json.dumps(lock))
         self.assertTrue(any("vulnerable nested Lodash" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_web_pattern_override_removed(self):
+        import json
+        p = self.root / "web/package.json"
+        x = json.loads(p.read_text())
+        del x["overrides"]["picomatch@2.3.1"]
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("Missing scoped web pattern" in s for s in verify_repository(self.root)))
+
+    def test_detects_legacy_picomatch(self):
+        import json
+        p = self.root / "web/package-lock.json"
+        x = json.loads(p.read_text())
+        x["packages"]["node_modules/picomatch"]["version"] = "2.3.1"
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("vulnerable web pattern" in s for s in verify_repository(self.root)))
+
+    def test_detects_reintroduced_unused_object_path(self):
+        import json
+        p = self.root / "web/package-lock.json"
+        x = json.loads(p.read_text())
+        x["packages"]["node_modules/object-path"] = {"version": "0.6.0"}
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("unused sort-by/object-path" in s for s in verify_repository(self.root)))
 
     def test_detects_missing_docs_node_matrix(self):
         p = self.root / ".github/workflows/docs-validation.yml"

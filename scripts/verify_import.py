@@ -153,6 +153,28 @@ def verify_repository(root: Path) -> list[str]:
     if docs_package.get("overrides", {}).get("openapi-to-postmanv2", {}).get("lodash") != "4.18.1":
         problems.append("OpenAPI generator Lodash security override is missing")
 
+    # Reviewed, exact-version web transitive fixes; avoid globally forcing
+    # legacy major 1/2 versions onto unrelated brace-expansion/picomatch 4/5.
+    try:
+        web_package = json.loads(text("web/package.json"))
+        web_lock = json.loads(text("web/package-lock.json"))
+        web_packages = web_lock.get("packages", {})
+        overrides = web_package.get("overrides", {})
+        for name, required in (("brace-expansion@1.1.11", "1.1.21"), ("picomatch@2.3.1", "2.3.2")):
+            if overrides.get(name) != required:
+                problems.append("Missing scoped web pattern security override: " + name)
+        for name, version in (("brace-expansion", "1.1.21"), ("picomatch", "2.3.2")):
+            if web_packages.get("node_modules/" + name, {}).get("version") != version:
+                problems.append("Unreviewed vulnerable web pattern dependency: " + name)
+        if web_packages.get("node_modules/vite/node_modules/picomatch", {}).get("version", "").split(".")[0] != "4":
+            problems.append("Web Vite picomatch major changed without compatibility review")
+        if "sort-by" in web_package.get("dependencies", {}) or "node_modules/sort-by" in web_packages or "node_modules/object-path" in web_packages:
+            problems.append("Reintroduced unused sort-by/object-path vulnerable dependency chain")
+        if web_package.get("dependencies") != web_packages.get("", {}).get("dependencies"):
+            problems.append("Web direct dependencies and lockfile root are inconsistent")
+    except (ValueError, KeyError, TypeError):
+        problems.append("Unable to validate web security dependencies or JSON manifest")
+
     for lock_path in ("web/package-lock.json", "docs/package-lock.json"):
         try:
             lock_data = json.loads(text(lock_path))

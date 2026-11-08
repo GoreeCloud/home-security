@@ -68,6 +68,8 @@ After [PR #47](https://github.com/GoreeCloud/home-security/pull/47) merged its *
 
 A fresh read-only `npm audit --package-lock-only --omit=dev --json` on the combined branch returned **39** documentation advisory-package matches (**0 critical, 10 high, 26 moderate, 3 low**), with no API error; neither the `lodash` nor `minimatch` vulnerable-package match remains. This compares to **41** (**0 critical, 12 high, 26 moderate, 3 low**) immediately before the two OpenAPI fixes. The 10 high and 26 moderate docs findings, 8 web findings, and separate Python/container/runtime assessments remain **OPEN**. The combined branch must pass source-integrity, Node 20/24 documentation and frontend hosted build checks before it can merge; no production system was modified.
 
+For the newer point-in-time security counts and review candidate, see [Dependency Security Check — November 8, 2026](DEPENDENCY_AUDIT_2026-11-08.md).
+
 ## Release blockers and remediation sequence
 
 1. Treat web and documentation lockfile findings as **open release blockers**. Determine each affected package version, direct/transitive dependency chain, patch release, reachability and compatibility risk before changes.
