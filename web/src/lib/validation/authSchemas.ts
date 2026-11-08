@@ -60,3 +60,46 @@ export function createRoleSchema(
     cameras: z.array(z.string()).min(1, messages.camerasRequired),
   });
 }
+
+export type SetPasswordMessages = {
+  passwordLength: string;
+  oldPasswordRequired: string;
+  passwordsDoNotMatch: string;
+};
+
+/** Password changes require the existing password; admin resets do not. */
+export function createSetPasswordSchema(
+  requireOldPassword: boolean,
+  messages: SetPasswordMessages,
+) {
+  const commonFields = {
+    password: z.string().min(12, messages.passwordLength),
+    confirmPassword: z.string(),
+  };
+
+  if (requireOldPassword) {
+    return z
+      .object({
+        oldPassword: z.string().min(1, messages.oldPasswordRequired),
+        ...commonFields,
+      })
+      .refine((data) => data.password === data.confirmPassword, {
+        message: messages.passwordsDoNotMatch,
+        path: ["confirmPassword"],
+      });
+  }
+
+  return z
+    .object(commonFields)
+    .refine((data) => data.password === data.confirmPassword, {
+      message: messages.passwordsDoNotMatch,
+      path: ["confirmPassword"],
+    });
+}
+
+/** A role must retain at least one camera selection. */
+export function createRoleCameraAccessSchema(requiredMessage: string) {
+  return z.object({
+    cameras: z.array(z.string()).min(1, requiredMessage),
+  });
+}

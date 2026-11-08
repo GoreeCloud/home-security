@@ -238,7 +238,13 @@ def verify_repository(root: Path) -> list[str]:
         # Preserve test coverage independently of the unfinished Zod 4 upgrade.
         schema_source = text("web/src/lib/validation/authSchemas.ts")
         schema_tests = text("web/src/lib/validation/authSchemas.test.ts")
-        for builder in ("createLoginSchema", "createUserSchema", "createRoleSchema"):
+        for builder in (
+            "createLoginSchema",
+            "createUserSchema",
+            "createRoleSchema",
+            "createSetPasswordSchema",
+            "createRoleCameraAccessSchema",
+        ):
             if builder not in schema_source or builder not in schema_tests:
                 problems.append("Missing real auth validation regression test: " + builder)
         test_config = text("web/vitest.validation.config.ts")

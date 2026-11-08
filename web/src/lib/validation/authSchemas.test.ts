@@ -4,6 +4,8 @@ import {
   createLoginSchema,
   createRoleSchema,
   createUserSchema,
+  createSetPasswordSchema,
+  createRoleCameraAccessSchema,
 } from "./authSchemas";
 
 const options = {
@@ -142,5 +144,106 @@ describe("role creation schema and resolver", () => {
     );
     expect(result.errors.role?.message).toBe("Role contains invalid symbols");
     expect(result.errors.cameras?.message).toBe("Choose at least one camera");
+  });
+});
+
+describe("self-service password change schema", () => {
+  const schema = createSetPasswordSchema(true, {
+    passwordLength: "New password is too short",
+    oldPasswordRequired: "Current password is required",
+    passwordsDoNotMatch: "New passwords do not match",
+  });
+
+  it("accepts the existing password and a matching synthetic new password", async () => {
+    const values = {
+      oldPassword: "OldSyntheticP@ss123",
+      password: "NewSyntheticP@ss123",
+      confirmPassword: "NewSyntheticP@ss123",
+    };
+    const result = await zodResolver(schema)(values, {}, options);
+    expect(result.errors).toEqual({});
+    expect(result.values).toEqual(values);
+  });
+
+  it("requires the existing password for self-service changes", async () => {
+    const result = await zodResolver(schema)(
+      {
+        oldPassword: "",
+        password: "NewSyntheticP@ss123",
+        confirmPassword: "NewSyntheticP@ss123",
+      },
+      {},
+      options,
+    );
+    expect(result.errors.oldPassword?.message).toBe(
+      "Current password is required",
+    );
+  });
+
+  it("rejects mismatched confirmation without leaking synthetic password values", async () => {
+    const result = await zodResolver(schema)(
+      {
+        oldPassword: "OldSyntheticP@ss123",
+        password: "NewSyntheticP@ss123",
+        confirmPassword: "AnotherSyntheticP@ss123",
+      },
+      {},
+      options,
+    );
+    expect(result.errors.confirmPassword?.message).toBe(
+      "New passwords do not match",
+    );
+    expect(JSON.stringify(result.errors)).not.toContain("NewSyntheticP@ss123");
+  });
+});
+
+describe("administrative password reset schema", () => {
+  const schema = createSetPasswordSchema(false, {
+    passwordLength: "New password is too short",
+    oldPasswordRequired: "Current password is required",
+    passwordsDoNotMatch: "New passwords do not match",
+  });
+
+  it("accepts a matching new password without an old-password field", async () => {
+    const values = {
+      password: "ResetSyntheticP@ss123",
+      confirmPassword: "ResetSyntheticP@ss123",
+    };
+    const result = await zodResolver(schema)(values, {}, options);
+    expect(result.errors).toEqual({});
+    expect(result.values).toEqual(values);
+  });
+
+  it("rejects too-short passwords even during administrative resets", async () => {
+    const result = await zodResolver(schema)(
+      { password: "short", confirmPassword: "short" },
+      {},
+      options,
+    );
+    expect(result.errors.password?.message).toBe("New password is too short");
+  });
+});
+
+describe("role camera-access selection schema", () => {
+  const schema = createRoleCameraAccessSchema("Choose at least one camera");
+
+  it("requires at least one camera to remain selected", async () => {
+    const result = await zodResolver(schema)(
+      { cameras: [] },
+      {},
+      options,
+    );
+    expect(result.errors.cameras?.message).toBe("Choose at least one camera");
+  });
+
+  it("accepts a synthetic camera assignment without any live device", async () => {
+    const data = { cameras: ["camera-example"] };
+    const result = await zodResolver(schema)(data, {}, options);
+    expect(result.values).toEqual(data);
+    expect(result.errors).toEqual({});
+  });
+
+  it("rejects non-string camera identifiers", () => {
+    expect(schema.safeParse({ cameras: [123] }).success).toBe(false);
   });
 });

@@ -47,6 +47,14 @@ The current **unmerged** follow-up reconciles the source type contract without b
 
 The branch is rebased by a local merge onto current main, with source conflicts reconciled in favor of the canonical merged regression baseline and the additional Zod 4 version checks retained. **The updated TypeScript/Vite build and 18 real Vitest tests still require a new hosted CI run before any compatibility claim.** No camera stream, private credential, live service, browser or GPU was accessed to develop these changes. Typechecking and synthetic tests remain insufficient for full browser-level user authorization and camera setup acceptance.
 
+## Expanded GoreeCloud Identity and camera authorization validation
+
+The verified candidate `e4eb984` passed source integrity, 18 real Zod4/resolver5 tests, the full TypeScript/Vite frontend build, and docs builds on both Node 20 and 24. This cleared the previous TypeScript *compilation* blocker, **not** user-interface or production release acceptance.
+
+The next isolated review adds two additional **real UI form schema builders** to `authSchemas.ts`, used directly by `SetPasswordDialog.tsx` and `EditRoleCamerasDialog.tsx`. This preserves existing translation keys and Zod rules while enabling **eight additional synthetic tests**: self-service current-password required, password strength minimum length, matching confirmation and localized error path, admin password reset without old password, role-to-camera selection required, valid synthetic camera selection, and rejection of invalid camera IDs. These checks increase the Node-only isolated Vitest suite from **18 to 26**. No password, camera access grant, network call, analytics or authentication response is sent to real services during tests.
+
+The current 26-test version is **not yet validated in hosted CI** at the time of writing. It must pass the complete read-only frontend compilation, source-integrity gate, and docs Node 20/24 builds. Even then, browser UI-level CSRF, role enforcement, password mutation and backend authorization need separate isolated end-to-end acceptance before production.
+
 ## Release blockers and limits
 
 This is a **semver-major change to input validation and form resolution** and affects approximately 22 tracked web component files importing `zod`. Shared schema tests, CI compilation, and lockfile review are necessary but **insufficient** to confirm that every camera, mask, zone, trigger, classifier, notification, user-management and authorization form preserves behavior.
