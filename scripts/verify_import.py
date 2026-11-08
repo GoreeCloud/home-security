@@ -84,6 +84,8 @@ def verify_repository(root: Path) -> list[str]:
     for token in ("@inkeep", "inkeepConfig:", "https://docs.frigate.video", "http://demo.frigate.video", "https://frigate.video/plus/"):
         if token in docs_config:
             problems.append("Unapproved upstream docs integration or product host: " + token)
+    if re.search(r"(?m)^\s*algolia\s*:", docs_config):
+        problems.append("External Algolia documentation search requires GoreeShield approval")
     if '"@inkeep/docusaurus"' in text("docs/package.json"):
         problems.append("Unapproved external docs AI dependency in package manifest")
     try:

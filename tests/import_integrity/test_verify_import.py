@@ -117,6 +117,11 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(json.dumps(x))
         self.assertTrue(any("unused sort-by/object-path" in s for s in verify_repository(self.root)))
 
+    def test_rejects_external_algolia_docs_search_activation(self):
+        p = self.root / "docs/docusaurus.config.ts"
+        p.write_text(p.read_text() + "\n  algolia: { apiKey: 'unreviewed' },\n")
+        self.assertTrue(any("GoreeShield approval" in issue for issue in verify_repository(self.root)))
+
     def test_detects_unreviewed_docsearch_ai_dependency(self):
         import json
         p = self.root / "docs/package-lock.json"
