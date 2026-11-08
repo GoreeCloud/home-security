@@ -172,6 +172,30 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(json.dumps(x))
         self.assertTrue(any("gray-matter YAML major" in issue for issue in verify_repository(self.root)))
 
+    def test_detects_removed_serializer_override(self):
+        import json
+        p = self.root / "docs/package.json"
+        x = json.loads(p.read_text())
+        del x["overrides"]["copy-webpack-plugin"]
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("Docs serialization security override" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_vulnerable_serializer_version(self):
+        import json
+        p = self.root / "docs/package-lock.json"
+        x = json.loads(p.read_text())
+        x["packages"]["node_modules/css-minimizer-webpack-plugin/node_modules/serialize-javascript"]["version"] = "6.0.2"
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("Vulnerable docs serialization dependency" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_unreviewed_serializer_copy(self):
+        import json
+        p = self.root / "docs/package-lock.json"
+        x = json.loads(p.read_text())
+        x["packages"]["node_modules/serialize-javascript"] = {"version": "6.0.2"}
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("Unexpected docs serialization dependency graph" in issue for issue in verify_repository(self.root)))
+
     def test_detects_missing_docs_node_matrix(self):
         p = self.root / ".github/workflows/docs-validation.yml"
         p.write_text(p.read_text().replace("node: ['20', '24']", "node: ['24']", 1))

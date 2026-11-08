@@ -164,6 +164,27 @@ def verify_repository(root: Path) -> list[str]:
     if docs_entries.get("node_modules/gray-matter/node_modules/js-yaml", {}).get("version", "").split(".")[0] != "3":
         problems.append("Unreviewed gray-matter YAML major migration")
 
+    # Two inherited docs webpack plugins use a serialize-javascript 6.x
+    # chain with a high advisory. Keep the reviewed Node20+ v7 fix scoped to
+    # those parents; check all resolved copies for reintroduction.
+    for parent in ("copy-webpack-plugin", "css-minimizer-webpack-plugin"):
+        scope = docs_package.get("overrides", {}).get(parent, {})
+        if scope.get("serialize-javascript") != "7.1.3":
+            problems.append("Docs serialization security override not reviewed: " + parent)
+        nested = f"node_modules/{parent}/node_modules/serialize-javascript"
+        if docs_entries.get(nested, {}).get("version") != "7.1.3":
+            problems.append("Vulnerable docs serialization dependency: " + parent)
+    serializer_paths = {
+        key for key in docs_entries
+        if key == "node_modules/serialize-javascript" or key.endswith("/node_modules/serialize-javascript")
+    }
+    required_serializers = {
+        f"node_modules/{parent}/node_modules/serialize-javascript"
+        for parent in ("copy-webpack-plugin", "css-minimizer-webpack-plugin")
+    }
+    if serializer_paths != required_serializers:
+        problems.append("Unexpected docs serialization dependency graph")
+
     # Restrict this OpenAPI toolchain minimatch fix to the affected parent.
     # Unrelated older minimatch 3 consumers must keep their existing majors.
     minimatch_version = docs_lock.get("packages", {}).get("node_modules/minimatch", {}).get("version")
