@@ -114,6 +114,14 @@ The new `groupSchemas.test.ts` executes **twelve synthetic actual Zod 4/resolver
 
 This brings local pure validation cases to **78/78 PASS**; four additional offline negative source-integrity cases prevent deleting the actual UI builder invocation, test case semantics or CI registration, for **85/85 total offline integrity regressions PASS**. The exact-hosted TypeScript/Vite build and the four synthetic real Chromium login tests must still pass on the new commit before making a compatibility claim. Camera group backend role enforcement and actual stream/camera visibility are not tested.
 
+## Enforced production-web advisory threshold in read-only CI
+
+The candidate branch's exact installed lockfile currently has **3 npm production dependency advisory-package matches (2 moderate, 1 low; 0 high/critical)**, while public `main` still has the high-severity Zod advisory. I verified `npm audit --package-lock-only --omit=dev --audit-level=high --registry=https://registry.npmjs.org` **exits 0** on the reviewed candidate lockfile. This command does not install packages, edit source, execute lifecycle scripts, or publish output.
+
+The existing read-only GitHub Actions web job now runs that explicit high/critical **fail-closed** advisory check immediately after its locked `npm ci --ignore-scripts` step, and before tests/build. The import integrity guard pins the exact audit command and has a negative test that rejects replacing the advisory check with a no-op. The threshold applies **only to web production dependencies** in `web/package-lock.json`; it does **not** replace full SBOM, OS, container/native/model, Python or docs advisories and does **not** establish runtime vulnerability immunity. Advisory feeds are dynamic and an unavailable npm registry may fail the build; failure should be investigated rather than bypassed or hidden.
+
+The separate documented **six high documentation package matches** remain unremediated at [docs security issue #60](https://github.com/GoreeCloud/home-security/issues/60). Exact-head hosted audit/CI must pass before the web gate is considered implemented; the existing `main` still lacks this candidate-only test gate.
+
 ## Release blockers and limits
 
 This is a **semver-major change to input validation and form resolution** and affects approximately 22 tracked web component files importing `zod`. Shared schema tests, CI compilation, and lockfile review are necessary but **insufficient** to confirm that every camera, mask, zone, trigger, classifier, notification, user-management and authorization form preserves behavior.

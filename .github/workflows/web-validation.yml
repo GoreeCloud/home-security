@@ -40,6 +40,9 @@ jobs:
       - name: Install locked frontend without lifecycle scripts
         working-directory: web
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Reject high or critical production web dependency advisories
+        working-directory: web
+        run: npm audit --package-lock-only --omit=dev --audit-level=high --registry=https://registry.npmjs.org
       - name: Apply reviewed local React Radix compatibility patches
         working-directory: web
         run: npx --no-install patch-package

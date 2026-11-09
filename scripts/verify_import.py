@@ -397,7 +397,7 @@ def verify_repository(root: Path) -> list[str]:
         if expected not in docs_validation:
             problems.append("Docs CI missing both supported Node versions or safe build step: " + expected)
     web_validation = text(".github/workflows/web-validation.yml")
-    for expected in ("npm ci --ignore-scripts", "npx --no-install patch-package", "npx --no-install vitest run --config vitest.validation.config.ts", "npx --no-install vitest run --config vitest.dom-validation.config.ts", "npx --no-install playwright install --with-deps chromium", "npx --no-install playwright test --config playwright.validation.config.ts", "npm run build", "node-version: '24'"):
+    for expected in ("npm ci --ignore-scripts", "npm audit --package-lock-only --omit=dev --audit-level=high --registry=https://registry.npmjs.org", "npx --no-install patch-package", "npx --no-install vitest run --config vitest.validation.config.ts", "npx --no-install vitest run --config vitest.dom-validation.config.ts", "npx --no-install playwright install --with-deps chromium", "npx --no-install playwright test --config playwright.validation.config.ts", "npm run build", "node-version: '24'"):
         if expected not in web_validation:
             problems.append("Web CI missing reviewed dependency/build action: " + expected)
 

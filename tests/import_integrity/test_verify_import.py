@@ -369,6 +369,14 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(p.read_text().replace('"src/lib/validation/groupSchemas.test.ts",', ""))
         self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
 
+    def test_detects_disabled_web_security_advisory_ci_gate(self):
+        p = self.root / ".github/workflows/web-validation.yml"
+        p.write_text(p.read_text().replace(
+            "npm audit --package-lock-only --omit=dev --audit-level=high --registry=https://registry.npmjs.org",
+            "echo ignored-production-advisories",
+        ))
+        self.assertTrue(any("Web CI missing reviewed dependency/build action" in issue for issue in verify_repository(self.root)))
+
     def test_detects_missing_numeric_schema_regressions(self):
         p = self.root / "web/src/lib/validation/numericSchemas.test.ts"
         p.write_text("test('not the real tests', () => {})")
