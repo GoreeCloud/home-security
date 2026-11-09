@@ -87,4 +87,56 @@ test.describe("Login validation in a real isolated Chromium browser", () => {
     expect(authenticationSubmitted).toBe(0);
     expect(outboundBlocked).toBe(0);
   });
+
+  test("a mocked rejected login carries the CSRF header and displays the localized error", async ({ page }) => {
+    let intercepted = 0;
+    await page.route("**/api/login", async (route) => {
+      intercepted++;
+      const req = route.request();
+      expect(req.method()).toBe("POST");
+      expect(req.headers()["x-csrf-token"]).toBe("1");
+      expect(req.postDataJSON()).toEqual({
+        user: "SyntheticUser",
+        password: "SyntheticPassword123!",
+      });
+      await route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Synthetic rejection" }),
+      });
+    });
+
+    await page.locator('input[name="user"]').fill("SyntheticUser");
+    await page.locator('input[name="password"]').fill("SyntheticPassword123!");
+    await page.getByRole("button", { name: "Login" }).click();
+
+    await expect(page.getByText("Login failed", { exact: true })).toBeVisible();
+    expect(intercepted).toBe(1);
+    expect(authenticationSubmitted).toBe(0);
+    expect(outboundBlocked).toBe(0);
+  });
+
+  test("a mocked rate-limited login renders the appropriate localized warning", async ({ page }) => {
+    let intercepted = 0;
+    await page.route("**/api/login", async (route) => {
+      intercepted++;
+      expect(route.request().headers()["x-csrf-token"]).toBe("1");
+      await route.fulfill({
+        status: 429,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Synthetic rate limit" }),
+      });
+    });
+
+    await page.locator('input[name="user"]').fill("SyntheticUser");
+    await page.locator('input[name="password"]').fill("SyntheticPassword123!");
+    await page.getByRole("button", { name: "Login" }).click();
+
+    await expect(
+      page.getByText("Exceeded rate limit. Try again later.", { exact: true }),
+    ).toBeVisible();
+    expect(intercepted).toBe(1);
+    expect(authenticationSubmitted).toBe(0);
+    expect(outboundBlocked).toBe(0);
+  });
 });

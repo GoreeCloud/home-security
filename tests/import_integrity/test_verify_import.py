@@ -250,6 +250,16 @@ class ImportIntegrityTests(unittest.TestCase):
         ))
         self.assertTrue(any("no-network acceptance" in issue for issue in verify_repository(self.root)))
 
+    def test_detects_missing_csrf_browser_assertion(self):
+        p = self.root / "web/tests/e2e/login.validation.spec.ts"
+        p.write_text(p.read_text().replace('["x-csrf-token"]', '["x-test-token"]'))
+        self.assertTrue(any("synthetic login CSRF" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_rate_limit_browser_acceptance(self):
+        p = self.root / "web/tests/e2e/login.validation.spec.ts"
+        p.write_text(p.read_text().replace("status: 429", "status: 418"))
+        self.assertTrue(any("synthetic login CSRF" in issue for issue in verify_repository(self.root)))
+
     def test_detects_unscoped_browser_server(self):
         p = self.root / "web/playwright.validation.config.ts"
         p.write_text(p.read_text().replace("127.0.0.1:4179", "0.0.0.0:4179"))

@@ -283,6 +283,15 @@ def verify_repository(root: Path) -> list[str]:
             or 'target.pathname.startsWith("/api/")' not in browser_test
         ):
             problems.append("Missing real browser login-validation and no-network acceptance coverage")
+        if (
+            browser_test.count('page.route("**/api/login"') != 2
+            or browser_test.count('["x-csrf-token"]') != 2
+            or "status: 401" not in browser_test
+            or "status: 429" not in browser_test
+            or "Login failed" not in browser_test
+            or "Exceeded rate limit" not in browser_test
+        ):
+            problems.append("Missing synthetic login CSRF and rejection-path browser tests")
         numeric_source = text("web/src/lib/validation/numericSchemas.ts")
         numeric_tests = text("web/src/lib/validation/numericSchemas.test.ts")
         for builder in (
