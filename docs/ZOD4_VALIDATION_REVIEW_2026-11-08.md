@@ -88,6 +88,16 @@ The current candidate extracts the original `MotionMaskEditPane.tsx` and `Object
 
 These tests do not validate end-to-end camera masking, object/motion detection fidelity, mask coordinate transforms, profile inheritance, consent policies, video redaction, backend permissions, or production camera runtime. Those remain separate GoreeShield/Wardveil and release requirements.
 
+## Classification-wizard model-definition validation
+
+The additional source-only candidate refactors **the actual** classification model wizard `Step1NameAndDefine.tsx` to use `createClassificationDefinitionSchema` in `web/src/lib/validation/classificationSchemas.ts`, retaining the source UI's original validation constraints and translation identifiers. This is a schema extraction, not a new object-detection/classification model or service.
+
+The corresponding `classificationSchemas.test.ts` verifies **14 synthetic Zod 4/resolver v5 contracts**: valid state and object models; missing names; 64-character name cap; prohibited all-numeric identifiers; case-insensitive duplicate classes; prohibited class `none` after trimming; empty classes; state classifiers requiring at least two nonblank classes; object models allowing one class but requiring an object label and an allowed subtype; and invalid model or subtype enumerations. Error messages are compared with synthetic localized test strings. No actual image, camera, model, video, uploaded training data, external inference request or private identifier is used.
+
+**Local checks:** the expanded **52/52** Zod 4 + compatible resolver real schema tests PASS, and **77/77** offline Python source-integrity regressions PASS; four new negative tests prevent the real wizard from disconnecting from its validated builder, an empty classification test stub, removal of conditional validation coverage or omission of the test file from the Node-only CI config. The TypeScript/Vite build and exact GitHub-hosted read-only CI remain required before declaring this revision compatible. The original exported wizard form types, translation keys, input fields, data-flow and conditional rules remain unchanged.
+
+**Remaining acceptance:** browser-level creation/editing interactions for classification classes, UI localization and invalid-submission notifications, actual backend rules, ML model content trust, resource/sandbox constraints and the complete GoreeShield/Wardveil privacy/security review. Passing synthetic form-validation tests is not an end-to-end ML model validation.
+
 ## Release blockers and limits
 
 This is a **semver-major change to input validation and form resolution** and affects approximately 22 tracked web component files importing `zod`. Shared schema tests, CI compilation, and lockfile review are necessary but **insufficient** to confirm that every camera, mask, zone, trigger, classifier, notification, user-management and authorization form preserves behavior.

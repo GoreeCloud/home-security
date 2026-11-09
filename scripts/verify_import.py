@@ -255,6 +255,7 @@ def verify_repository(root: Path) -> list[str]:
             or "authSchemas.test.ts" not in test_config
             or "numericSchemas.test.ts" not in test_config
             or "maskSchemas.test.ts" not in test_config
+            or "classificationSchemas.test.ts" not in test_config
         ):
             problems.append("Validation tests must run with the isolated Node-only config")
         login_dom_config = text("web/vitest.dom-validation.config.ts")
@@ -305,6 +306,20 @@ def verify_repository(root: Path) -> list[str]:
                 or name + "(" not in text(ui_file)
             ):
                 problems.append("Missing actual privacy-mask validation regression: " + name)
+        classification_source = text("web/src/lib/validation/classificationSchemas.ts")
+        classification_tests = text("web/src/lib/validation/classificationSchemas.test.ts")
+        classification_ui = text("web/src/components/classification/wizard/Step1NameAndDefine.tsx")
+        if (
+            "createClassificationDefinitionSchema" not in classification_source
+            or "createClassificationDefinitionSchema(" not in classification_ui
+            or "createClassificationDefinitionSchema(" not in classification_tests
+            or "modelType" not in classification_tests
+            or "classesUnique" not in classification_tests
+            or "stateRequiresTwoClasses" not in classification_tests
+            or "objectLabelRequired" not in classification_tests
+            or "objectTypeRequired" not in classification_tests
+        ):
+            problems.append("Missing actual classification wizard Zod4 resolver contract regression")
         numeric_source = text("web/src/lib/validation/numericSchemas.ts")
         numeric_tests = text("web/src/lib/validation/numericSchemas.test.ts")
         for builder in (

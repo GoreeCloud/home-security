@@ -20,6 +20,8 @@ COPY_PATHS = (
     "web/src/lib/validation/authSchemas.ts", "web/src/lib/validation/authSchemas.test.ts",
     "web/src/lib/validation/numericSchemas.ts", "web/src/lib/validation/numericSchemas.test.ts",
     "web/src/lib/validation/maskSchemas.ts", "web/src/lib/validation/maskSchemas.test.ts",
+    "web/src/lib/validation/classificationSchemas.ts", "web/src/lib/validation/classificationSchemas.test.ts",
+    "web/src/components/classification/wizard/Step1NameAndDefine.tsx",
     "web/src/components/settings/MotionMaskEditPane.tsx", "web/src/components/settings/ObjectMaskEditPane.tsx",
     "web/vitest.validation.config.ts", "web/vitest.dom-validation.config.ts",
     "web/playwright.validation.config.ts", "web/tests/e2e/login.validation.spec.ts",
@@ -293,6 +295,30 @@ class ImportIntegrityTests(unittest.TestCase):
     def test_detects_missing_mask_test_from_node_config(self):
         p = self.root / "web/vitest.validation.config.ts"
         p.write_text(p.read_text().replace('"src/lib/validation/maskSchemas.test.ts",', ""))
+        self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disconnected_classification_wizard(self):
+        p = self.root / "web/src/components/classification/wizard/Step1NameAndDefine.tsx"
+        p.write_text(p.read_text().replace(
+            "createClassificationDefinitionSchema(", "createUncheckedClassificationSchema(",
+        ))
+        self.assertTrue(any("classification wizard Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_real_classification_resolver_test(self):
+        p = self.root / "web/src/lib/validation/classificationSchemas.test.ts"
+        p.write_text('test("placeholder", () => {})')
+        self.assertTrue(any("classification wizard Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_removed_classifier_conditional_checks(self):
+        p = self.root / "web/src/lib/validation/classificationSchemas.test.ts"
+        p.write_text(p.read_text().replace("stateRequiresTwoClasses", "missingStateTwoClassRule"))
+        self.assertTrue(any("classification wizard Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_classification_tests_from_node_config(self):
+        p = self.root / "web/vitest.validation.config.ts"
+        p.write_text(p.read_text().replace(
+            '"src/lib/validation/classificationSchemas.test.ts",', "",
+        ))
         self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
 
     def test_detects_missing_numeric_schema_regressions(self):

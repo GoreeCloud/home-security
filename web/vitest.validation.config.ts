@@ -11,6 +11,7 @@ export default defineConfig({
       "src/lib/validation/authSchemas.test.ts",
       "src/lib/validation/numericSchemas.test.ts",
       "src/lib/validation/maskSchemas.test.ts",
+      "src/lib/validation/classificationSchemas.test.ts",
     ],
     globals: false,
   },

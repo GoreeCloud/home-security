@@ -20,6 +20,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { createClassificationDefinitionSchema } from "@/lib/validation/classificationSchemas";
 import { useTranslation } from "react-i18next";
 import { useMemo } from "react";
 import { LuX, LuPlus, LuInfo, LuExternalLink } from "react-icons/lu";
@@ -81,82 +82,17 @@ export default function Step1NameAndDefine({
     return [...labels].sort();
   }, [config]);
 
-  const step1FormData = z
-    .object({
-      modelName: z
-        .string()
-        .min(1, t("wizard.step1.errors.nameRequired"))
-        .max(64, t("wizard.step1.errors.nameLength"))
-        .refine((value) => !/^\d+$/.test(value), {
-          message: t("wizard.step1.errors.nameOnlyNumbers"),
-        }),
-      modelType: z.enum(["state", "object"]),
-      objectLabel: z.string().optional(),
-      objectType: z.enum(["sub_label", "attribute"]).optional(),
-      classes: z
-        .array(
-          z
-            .string()
-            .refine(
-              (val) => val.trim().toLowerCase() !== "none",
-              t("wizard.step1.errors.noneNotAllowed"),
-            ),
-        )
-        .min(1, t("wizard.step1.errors.classRequired"))
-        .refine(
-          (classes) => {
-            const nonEmpty = classes.filter((c) => c.trim().length > 0);
-            return nonEmpty.length >= 1;
-          },
-          { message: t("wizard.step1.errors.classRequired") },
-        )
-        .refine(
-          (classes) => {
-            const nonEmpty = classes.filter((c) => c.trim().length > 0);
-            const unique = new Set(nonEmpty.map((c) => c.toLowerCase()));
-            return unique.size === nonEmpty.length;
-          },
-          { message: t("wizard.step1.errors.classesUnique") },
-        ),
-    })
-    .refine(
-      (data) => {
-        // State models require at least 2 classes
-        if (data.modelType === "state") {
-          const nonEmpty = data.classes.filter((c) => c.trim().length > 0);
-          return nonEmpty.length >= 2;
-        }
-        return true;
-      },
-      {
-        message: t("wizard.step1.errors.stateRequiresTwoClasses"),
-        path: ["classes"],
-      },
-    )
-    .refine(
-      (data) => {
-        if (data.modelType === "object") {
-          return data.objectLabel !== undefined && data.objectLabel !== "";
-        }
-        return true;
-      },
-      {
-        message: t("wizard.step1.errors.objectLabelRequired"),
-        path: ["objectLabel"],
-      },
-    )
-    .refine(
-      (data) => {
-        if (data.modelType === "object") {
-          return data.objectType !== undefined;
-        }
-        return true;
-      },
-      {
-        message: t("wizard.step1.errors.objectTypeRequired"),
-        path: ["objectType"],
-      },
-    );
+  const step1FormData = createClassificationDefinitionSchema({
+    nameRequired: t("wizard.step1.errors.nameRequired"),
+    nameLength: t("wizard.step1.errors.nameLength"),
+    nameOnlyNumbers: t("wizard.step1.errors.nameOnlyNumbers"),
+    noneNotAllowed: t("wizard.step1.errors.noneNotAllowed"),
+    classRequired: t("wizard.step1.errors.classRequired"),
+    classesUnique: t("wizard.step1.errors.classesUnique"),
+    stateRequiresTwoClasses: t("wizard.step1.errors.stateRequiresTwoClasses"),
+    objectLabelRequired: t("wizard.step1.errors.objectLabelRequired"),
+    objectTypeRequired: t("wizard.step1.errors.objectTypeRequired"),
+  });
 
   const form = useForm<z.infer<typeof step1FormData>>({
     resolver: zodResolver(step1FormData),
