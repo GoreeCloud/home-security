@@ -256,6 +256,7 @@ def verify_repository(root: Path) -> list[str]:
             or "numericSchemas.test.ts" not in test_config
             or "maskSchemas.test.ts" not in test_config
             or "classificationSchemas.test.ts" not in test_config
+            or "triggerSchemas.test.ts" not in test_config
         ):
             problems.append("Validation tests must run with the isolated Node-only config")
         login_dom_config = text("web/vitest.dom-validation.config.ts")
@@ -320,6 +321,19 @@ def verify_repository(root: Path) -> list[str]:
             or "objectTypeRequired" not in classification_tests
         ):
             problems.append("Missing actual classification wizard Zod4 resolver contract regression")
+        trigger_source = text("web/src/lib/validation/triggerSchemas.ts")
+        trigger_tests = text("web/src/lib/validation/triggerSchemas.test.ts")
+        trigger_ui = text("web/src/components/overlay/CreateTriggerDialog.tsx")
+        if (
+            "createTriggerSchema(" not in trigger_source
+            or "createTriggerSchema(" not in trigger_tests
+            or "createTriggerSchema(" not in trigger_ui
+            or "alreadyExists" not in trigger_tests
+            or "minThreshold" not in trigger_tests
+            or "maxThreshold" not in trigger_tests
+            or "external_command" not in trigger_tests
+        ):
+            problems.append("Missing actual camera-trigger action validation regression")
         numeric_source = text("web/src/lib/validation/numericSchemas.ts")
         numeric_tests = text("web/src/lib/validation/numericSchemas.test.ts")
         for builder in (

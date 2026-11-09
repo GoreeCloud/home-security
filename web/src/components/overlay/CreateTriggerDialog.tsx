@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { createTriggerSchema } from "@/lib/validation/triggerSchemas";
 import useSWR from "swr";
 import {
   Dialog,
@@ -112,37 +113,20 @@ export default function CreateTriggerDialog({
     ).map((trigger) => trigger.friendly_name);
   }, [config, selectedCamera]);
 
-  const formSchema = z.object({
-    enabled: z.boolean(),
-    name: z
-      .string()
-      .min(2, t("triggers.dialog.form.name.error.minLength"))
-      .regex(
-        /^[a-zA-Z0-9_-]+$/,
-        t("triggers.dialog.form.name.error.invalidCharacters"),
-      )
-      .refine(
-        (value) =>
-          !existingTriggerNames.includes(value) || value === trigger?.name,
-        t("triggers.dialog.form.name.error.alreadyExists"),
-      ),
-    friendly_name: z
-      .string()
-      .min(2, t("triggers.dialog.form.name.error.minLength"))
-      .refine(
-        (value) =>
-          !existingTriggerFriendlyNames.includes(value) ||
-          value === trigger?.friendly_name,
-        t("triggers.dialog.form.name.error.alreadyExists"),
-      ),
-    type: z.enum(["thumbnail", "description"]),
-    data: z.string().min(1, t("triggers.dialog.form.content.error.required")),
-    threshold: z
-      .number()
-      .min(0, t("triggers.dialog.form.threshold.error.min"))
-      .max(1, t("triggers.dialog.form.threshold.error.max")),
-    actions: z.array(z.enum(["notification", "sub_label", "attribute"])),
-  });
+  const formSchema = createTriggerSchema(
+    trigger?.name,
+    trigger?.friendly_name,
+    existingTriggerNames,
+    existingTriggerFriendlyNames,
+    {
+      minLength: t("triggers.dialog.form.name.error.minLength"),
+      invalidCharacters: t("triggers.dialog.form.name.error.invalidCharacters"),
+      alreadyExists: t("triggers.dialog.form.name.error.alreadyExists"),
+      requiredContent: t("triggers.dialog.form.content.error.required"),
+      minThreshold: t("triggers.dialog.form.threshold.error.min"),
+      maxThreshold: t("triggers.dialog.form.threshold.error.max"),
+    },
+  );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

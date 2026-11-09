@@ -21,6 +21,8 @@ COPY_PATHS = (
     "web/src/lib/validation/numericSchemas.ts", "web/src/lib/validation/numericSchemas.test.ts",
     "web/src/lib/validation/maskSchemas.ts", "web/src/lib/validation/maskSchemas.test.ts",
     "web/src/lib/validation/classificationSchemas.ts", "web/src/lib/validation/classificationSchemas.test.ts",
+    "web/src/lib/validation/triggerSchemas.ts", "web/src/lib/validation/triggerSchemas.test.ts",
+    "web/src/components/overlay/CreateTriggerDialog.tsx",
     "web/src/components/classification/wizard/Step1NameAndDefine.tsx",
     "web/src/components/settings/MotionMaskEditPane.tsx", "web/src/components/settings/ObjectMaskEditPane.tsx",
     "web/vitest.validation.config.ts", "web/vitest.dom-validation.config.ts",
@@ -318,6 +320,28 @@ class ImportIntegrityTests(unittest.TestCase):
         p = self.root / "web/vitest.validation.config.ts"
         p.write_text(p.read_text().replace(
             '"src/lib/validation/classificationSchemas.test.ts",', "",
+        ))
+        self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_unreviewed_trigger_action_schema_test(self):
+        p = self.root / "web/src/lib/validation/triggerSchemas.test.ts"
+        p.write_text('test("fake trigger test", () => {})')
+        self.assertTrue(any("camera-trigger action validation" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disconnected_trigger_ui_schema(self):
+        p = self.root / "web/src/components/overlay/CreateTriggerDialog.tsx"
+        p.write_text(p.read_text().replace("createTriggerSchema(", "createUnsafeTriggerSchema("))
+        self.assertTrue(any("camera-trigger action validation" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_removed_trigger_threshold_review(self):
+        p = self.root / "web/src/lib/validation/triggerSchemas.test.ts"
+        p.write_text(p.read_text().replace("maxThreshold", "removedMaximumThreshold"))
+        self.assertTrue(any("camera-trigger action validation" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disabled_trigger_test_in_ci_config(self):
+        p = self.root / "web/vitest.validation.config.ts"
+        p.write_text(p.read_text().replace(
+            '"src/lib/validation/triggerSchemas.test.ts",', "",
         ))
         self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
 

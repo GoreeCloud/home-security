@@ -98,6 +98,14 @@ The corresponding `classificationSchemas.test.ts` verifies **14 synthetic Zod 4/
 
 **Remaining acceptance:** browser-level creation/editing interactions for classification classes, UI localization and invalid-submission notifications, actual backend rules, ML model content trust, resource/sandbox constraints and the complete GoreeShield/Wardveil privacy/security review. Passing synthetic form-validation tests is not an end-to-end ML model validation.
 
+## Camera-trigger action validation without event delivery
+
+Because GoreeCloud Home Security's semantic-search triggers can produce **notifications, sublabels and attributes**, the trigger form must reject malformed identifiers and out-of-range matching thresholds without expanding existing authorized actions. The imported `CreateTriggerDialog.tsx` is refactored to use `createTriggerSchema` from `web/src/lib/validation/triggerSchemas.ts` while passing the same camera-scoped existing IDs and friendly names, current editing values, translated errors and original form submission callback contract.
+
+The corresponding **14 real Zod 4/resolver v5 synthetic regression tests** cover description and thumbnail modes, supported action enumeration, empty action selection (retained original behavior), ID length and allowed characters, camera-scoped duplicate ID/friendly-name blocking, unchanged-name edit allowance, required trigger content, inclusive threshold minimum **0** and maximum **1**, rejection of out-of-range/string thresholds, invalid actions, unexpected trigger types and boolean flag types. No trigger is actually created, no message or notification is dispatched and no camera data is accessed.
+
+This extends the local version-pinned form test suite to **66/66 PASS**, comprising auth, numeric coercion, detection masks, classification definition and triggers. The offline integrity suite adds four negative tests guarding the real dialog's schema invocation, actual trigger tests, threshold safety assertions and CI registration. All branches require a fresh full TypeScript/Vite build and hosted no-publish CI on the exact branch commit. These tests **do not** certify backend trigger execution, semantic search inputs/outputs, notification recipients, subscription consent or Wardveil/GoreeShield authorization.
+
 ## Release blockers and limits
 
 This is a **semver-major change to input validation and form resolution** and affects approximately 22 tracked web component files importing `zod`. Shared schema tests, CI compilation, and lockfile review are necessary but **insufficient** to confirm that every camera, mask, zone, trigger, classifier, notification, user-management and authorization form preserves behavior.
