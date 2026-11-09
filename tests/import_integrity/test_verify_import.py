@@ -22,6 +22,8 @@ COPY_PATHS = (
     "web/src/lib/validation/maskSchemas.ts", "web/src/lib/validation/maskSchemas.test.ts",
     "web/src/lib/validation/classificationSchemas.ts", "web/src/lib/validation/classificationSchemas.test.ts",
     "web/src/lib/validation/triggerSchemas.ts", "web/src/lib/validation/triggerSchemas.test.ts",
+    "web/src/lib/validation/groupSchemas.ts", "web/src/lib/validation/groupSchemas.test.ts",
+    "web/src/components/filter/CameraGroupSelector.tsx",
     "web/src/components/overlay/CreateTriggerDialog.tsx",
     "web/src/components/classification/wizard/Step1NameAndDefine.tsx",
     "web/src/components/settings/MotionMaskEditPane.tsx", "web/src/components/settings/ObjectMaskEditPane.tsx",
@@ -343,6 +345,28 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(p.read_text().replace(
             '"src/lib/validation/triggerSchemas.test.ts",', "",
         ))
+        self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_group_form_normalization_test(self):
+        p = self.root / "web/src/lib/validation/groupSchemas.test.ts"
+        p.write_text('test("fake camera-group test", () => {})')
+        self.assertTrue(any("camera-group name normalization" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_camera_group_form_disconnected_from_schema(self):
+        p = self.root / "web/src/components/filter/CameraGroupSelector.tsx"
+        p.write_text(p.read_text().replace(
+            "createCameraGroupSchema(", "createUnsafeCameraGroupSchema(",
+        ))
+        self.assertTrue(any("camera-group name normalization" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_reserved_default_camera_group_test(self):
+        p = self.root / "web/src/lib/validation/groupSchemas.test.ts"
+        p.write_text(p.read_text().replace("messages.invalidReservedName", "removedReservedRule"))
+        self.assertTrue(any("camera-group name normalization" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disabled_camera_group_test_ci(self):
+        p = self.root / "web/vitest.validation.config.ts"
+        p.write_text(p.read_text().replace('"src/lib/validation/groupSchemas.test.ts",', ""))
         self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
 
     def test_detects_missing_numeric_schema_regressions(self):

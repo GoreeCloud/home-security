@@ -13,6 +13,7 @@ export default defineConfig({
       "src/lib/validation/maskSchemas.test.ts",
       "src/lib/validation/classificationSchemas.test.ts",
       "src/lib/validation/triggerSchemas.test.ts",
+      "src/lib/validation/groupSchemas.test.ts",
     ],
     globals: false,
   },

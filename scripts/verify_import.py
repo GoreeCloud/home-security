@@ -257,6 +257,7 @@ def verify_repository(root: Path) -> list[str]:
             or "maskSchemas.test.ts" not in test_config
             or "classificationSchemas.test.ts" not in test_config
             or "triggerSchemas.test.ts" not in test_config
+            or "groupSchemas.test.ts" not in test_config
         ):
             problems.append("Validation tests must run with the isolated Node-only config")
         login_dom_config = text("web/vitest.dom-validation.config.ts")
@@ -334,6 +335,19 @@ def verify_repository(root: Path) -> list[str]:
             or "external_command" not in trigger_tests
         ):
             problems.append("Missing actual camera-trigger action validation regression")
+        group_source = text("web/src/lib/validation/groupSchemas.ts")
+        group_tests = text("web/src/lib/validation/groupSchemas.test.ts")
+        group_ui = text("web/src/components/filter/CameraGroupSelector.tsx")
+        if (
+            "createCameraGroupSchema(" not in group_source
+            or "createCameraGroupSchema(" not in group_tests
+            or "createCameraGroupSchema(" not in group_ui
+            or "result.values.name" not in group_tests
+            or "messages.duplicate" not in group_tests
+            or "messages.invalidReservedName" not in group_tests
+            or "messages.noPeriod" not in group_tests
+        ):
+            problems.append("Missing camera-group name normalization and authorization-safe validation regression")
         numeric_source = text("web/src/lib/validation/numericSchemas.ts")
         numeric_tests = text("web/src/lib/validation/numericSchemas.test.ts")
         for builder in (

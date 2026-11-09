@@ -63,6 +63,7 @@ import IconWrapper from "../ui/icon-wrapper";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { createCameraGroupSchema } from "@/lib/validation/groupSchemas";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import ActivityIndicator from "../indicators/activity-indicator";
@@ -906,45 +907,19 @@ export function CameraGroupEdit({
 
   const birdseyeConfig = useMemo(() => config?.birdseye, [config]);
 
-  const formSchema = z.object({
-    name: z
-      .string()
-      .trim()
-      .min(2, {
-        message: t("group.name.errorMessage.mustLeastCharacters"),
-      })
-      .transform((val: string) => val.replace(/\s+/g, "_"))
-      .refine(
-        (value: string) => {
-          return (
-            editingGroup !== undefined ||
-            !currentGroups.map((group) => group[0]).includes(value)
-          );
-        },
-        {
-          message: t("group.name.errorMessage.exists"),
-        },
-      )
-      .refine(
-        (value: string) => {
-          return !value.includes(".");
-        },
-        {
-          message: t("group.name.errorMessage.nameMustNotPeriod"),
-        },
-      )
-      .refine((value: string) => value.toLowerCase() !== "default", {
-        message: t("group.name.errorMessage.invalid"),
-      }),
-
-    cameras: z.array(z.string()),
-    icon: z
-      .string()
-      .min(1, { message: "You must select an icon." })
-      .refine((value) => Object.keys(LuIcons).includes(value), {
-        message: "Invalid icon",
-      }),
-  });
+  const formSchema = createCameraGroupSchema(
+    currentGroups.map((group) => group[0]),
+    editingGroup !== undefined,
+    Object.keys(LuIcons),
+    {
+      minLength: t("group.name.errorMessage.mustLeastCharacters"),
+      duplicate: t("group.name.errorMessage.exists"),
+      noPeriod: t("group.name.errorMessage.nameMustNotPeriod"),
+      invalidReservedName: t("group.name.errorMessage.invalid"),
+      iconRequired: "You must select an icon.",
+      invalidIcon: "Invalid icon",
+    },
+  );
 
   const onSubmit = useCallback(
     async (values: z.infer<typeof formSchema>) => {
