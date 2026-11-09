@@ -258,6 +258,7 @@ def verify_repository(root: Path) -> list[str]:
             or "classificationSchemas.test.ts" not in test_config
             or "triggerSchemas.test.ts" not in test_config
             or "groupSchemas.test.ts" not in test_config
+            or "zoneSchemas.test.ts" not in test_config
         ):
             problems.append("Validation tests must run with the isolated Node-only config")
         login_dom_config = text("web/vitest.dom-validation.config.ts")
@@ -348,6 +349,19 @@ def verify_repository(root: Path) -> list[str]:
             or "messages.noPeriod" not in group_tests
         ):
             problems.append("Missing camera-group name normalization and authorization-safe validation regression")
+        zone_source = text("web/src/lib/validation/zoneSchemas.ts")
+        zone_tests = text("web/src/lib/validation/zoneSchemas.test.ts")
+        zone_ui = text("web/src/components/settings/ZoneEditPane.tsx")
+        if (
+            "createZoneSchema(" not in zone_source
+            or "createZoneSchema(" not in zone_ui
+            or "createZoneSchema(" not in zone_tests
+            or "speedLoiteringConflict" not in zone_tests
+            or "distanceRequired" not in zone_tests
+            or "unfinishedPolygon" not in zone_tests
+            or "parsed.values" not in zone_tests
+        ):
+            problems.append("Missing actual zone polygon Zod4 cross-field validation regression")
         numeric_source = text("web/src/lib/validation/numericSchemas.ts")
         numeric_tests = text("web/src/lib/validation/numericSchemas.test.ts")
         for builder in (

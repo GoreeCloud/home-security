@@ -122,6 +122,14 @@ The existing read-only GitHub Actions web job now runs that explicit high/critic
 
 The separate documented **six high documentation package matches** remain unremediated at [docs security issue #60](https://github.com/GoreeCloud/home-security/issues/60). Exact-head hosted audit/CI must pass before the web gate is considered implemented; the existing `main` still lacks this candidate-only test gate.
 
+## Zone polygon speed/distance/loitering compatibility
+
+The actual `ZoneEditPane.tsx` combines multiple security- and operations-relevant Zod validations for camera zone geometry, required fields and video-event timing. The existing implementation was reviewed and its exact behavior extracted into `web/src/lib/validation/zoneSchemas.ts`; **the production zone editor now invokes this shared builder**, supplying the same enabled-camera and other-polygon names, translated error strings and already-reviewed numeric coercion helpers. No camera APIs, coordinate transforms, zone data persistence, event processing or backend role checks were altered.
+
+The new `zoneSchemas.test.ts` uses **19 synthetic tests** with the installed Zod 4 and resolver v5: valid completed polygons, normalized zone ID output and nonmutation of input, default `enabled` and `speedEstimation`, uniqueness across camera IDs and other zones, forbidden periods, required display names, incomplete polygons, mandatory inertia, retained blank numeric unions, negative loitering time, all four positive speed-estimation distance requirements, 0.1 distance and speed threshold boundaries, **prohibition on simultaneous positive loitering time and speed estimation**, and compatible optional review/object fields. These cover output parsing/coercion as well as field-specific errors.
+
+The local isolated schema suite increased to **97/97 PASS** and the offline integrity suite added four negative regression tests for disconnected zone builder, missing cross-field tests, disabled CI registration and removed speed-loitering assertions (**90/90 offline cases PASS**). The full TypeScript check and hosted CI are separate mandatory gates. A completed polygon flag is a **form state**, not proof of correct zone geometry, detection accuracy, GoreeShield recording privacy or Wardveil access-control enforcement. No live camera or NVR was accessed.
+
 ## Release blockers and limits
 
 This is a **semver-major change to input validation and form resolution** and affects approximately 22 tracked web component files importing `zod`. Shared schema tests, CI compilation, and lockfile review are necessary but **insufficient** to confirm that every camera, mask, zone, trigger, classifier, notification, user-management and authorization form preserves behavior.

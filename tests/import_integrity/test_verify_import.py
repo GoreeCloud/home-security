@@ -23,6 +23,8 @@ COPY_PATHS = (
     "web/src/lib/validation/classificationSchemas.ts", "web/src/lib/validation/classificationSchemas.test.ts",
     "web/src/lib/validation/triggerSchemas.ts", "web/src/lib/validation/triggerSchemas.test.ts",
     "web/src/lib/validation/groupSchemas.ts", "web/src/lib/validation/groupSchemas.test.ts",
+    "web/src/lib/validation/zoneSchemas.ts", "web/src/lib/validation/zoneSchemas.test.ts",
+    "web/src/components/settings/ZoneEditPane.tsx",
     "web/src/components/filter/CameraGroupSelector.tsx",
     "web/src/components/overlay/CreateTriggerDialog.tsx",
     "web/src/components/classification/wizard/Step1NameAndDefine.tsx",
@@ -376,6 +378,26 @@ class ImportIntegrityTests(unittest.TestCase):
             "echo ignored-production-advisories",
         ))
         self.assertTrue(any("Web CI missing reviewed dependency/build action" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disconnected_zone_editor_schema(self):
+        p = self.root / "web/src/components/settings/ZoneEditPane.tsx"
+        p.write_text(p.read_text().replace("createZoneSchema(", "createUncheckedZoneSchema("))
+        self.assertTrue(any("zone polygon Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_zone_cross_field_validation_tests(self):
+        p = self.root / "web/src/lib/validation/zoneSchemas.test.ts"
+        p.write_text('test("placeholder", () => {})')
+        self.assertTrue(any("zone polygon Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disabled_zone_test_in_node_config(self):
+        p = self.root / "web/vitest.validation.config.ts"
+        p.write_text(p.read_text().replace('"src/lib/validation/zoneSchemas.test.ts",', ""))
+        self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_zone_speed_loitering_regression(self):
+        p = self.root / "web/src/lib/validation/zoneSchemas.test.ts"
+        p.write_text(p.read_text().replace("speedLoiteringConflict", "ruleRemoved"))
+        self.assertTrue(any("zone polygon Zod4" in issue for issue in verify_repository(self.root)))
 
     def test_detects_missing_numeric_schema_regressions(self):
         p = self.root / "web/src/lib/validation/numericSchemas.test.ts"

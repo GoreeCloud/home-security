@@ -17,11 +17,8 @@ import useSWR from "swr";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import {
-  createZoneInertiaSchema,
-  createOptionalZoneNumberSchema,
-  hasPositiveZoneLoiteringTime,
-} from "@/lib/validation/numericSchemas";
+import { hasPositiveZoneLoiteringTime } from "@/lib/validation/numericSchemas";
+import { createZoneSchema } from "@/lib/validation/zoneSchemas";
 import { ZoneFormValuesType, Polygon } from "@/types/canvas";
 import { reviewQueries } from "@/utils/zoneEdutUtil";
 import { Switch } from "../ui/switch";
@@ -149,143 +146,35 @@ export default function ZoneEditPane({
       : [undefined, undefined, undefined, undefined];
   }, [polygon, config, editingProfile]);
 
-  const formSchema = z
-    .object({
-      name: z
-        .string()
-        .min(2, {
-          message: t(
-            "masksAndZones.form.zoneName.error.mustBeAtLeastTwoCharacters",
-          ),
-        })
-        .transform((val: string) => val.trim().replace(/\s+/g, "_"))
-        .refine(
-          (value: string) => {
-            return !cameras.map((cam) => cam.name).includes(value);
-          },
-          {
-            message: t(
-              "masksAndZones.form.zoneName.error.mustNotBeSameWithCamera",
-            ),
-          },
-        )
-        .refine(
-          (value: string) => {
-            const otherPolygonNames =
-              polygons
-                ?.filter((_, index) => index !== activePolygonIndex)
-                .map((polygon) => polygon.name) || [];
-
-            return !otherPolygonNames.includes(value);
-          },
-          {
-            message: t("masksAndZones.form.zoneName.error.alreadyExists"),
-          },
-        )
-        .refine(
-          (value: string) => {
-            return !value.includes(".");
-          },
-          {
-            message: t(
-              "masksAndZones.form.zoneName.error.mustNotContainPeriod",
-            ),
-          },
-        ),
-      friendly_name: z
-        .string()
-        .min(2, {
-          message: t(
-            "masksAndZones.form.zoneName.error.mustBeAtLeastTwoCharacters",
-          ),
-        })
-        .refine(
-          (value: string) => {
-            return !cameras.map((cam) => cam.name).includes(value);
-          },
-          {
-            message: t(
-              "masksAndZones.form.zoneName.error.mustNotBeSameWithCamera",
-            ),
-          },
-        )
-        .refine(
-          (value: string) => {
-            const otherPolygonNames =
-              polygons
-                ?.filter((_, index) => index !== activePolygonIndex)
-                .map((polygon) => polygon.name) || [];
-
-            return !otherPolygonNames.includes(value);
-          },
-          {
-            message: t("masksAndZones.form.zoneName.error.alreadyExists"),
-          },
-        ),
-      enabled: z.boolean().default(true),
-      inertia: createZoneInertiaSchema(
-        t("masksAndZones.form.inertia.error.mustBeAboveZero"),
+  const formSchema = createZoneSchema(
+    cameras.map((cam) => cam.name),
+    polygons
+      ?.filter((_, index) => index !== activePolygonIndex)
+      .map((polygon) => polygon.name) || [],
+    {
+      nameMinLength: t(
+        "masksAndZones.form.zoneName.error.mustBeAtLeastTwoCharacters",
       ),
-      loitering_time: createOptionalZoneNumberSchema(
-        0,
-        t("masksAndZones.form.loiteringTime.error.mustBeGreaterOrEqualZero"),
+      matchesCameraName: t(
+        "masksAndZones.form.zoneName.error.mustNotBeSameWithCamera",
       ),
-      isFinished: z.boolean().refine((val) => val === true, {
-        message: t("masksAndZones.form.polygonDrawing.error.mustBeFinished"),
-      }),
-      objects: z.array(z.string()).optional(),
-      review_alerts: z.boolean().default(false).optional(),
-      review_detections: z.boolean().default(false).optional(),
-      speedEstimation: z.boolean().default(false),
-      lineA: createOptionalZoneNumberSchema(
-        0.1,
-        t("masksAndZones.form.distance.error.text"),
+      alreadyExists: t("masksAndZones.form.zoneName.error.alreadyExists"),
+      noPeriod: t("masksAndZones.form.zoneName.error.mustNotContainPeriod"),
+      inertiaMin: t("masksAndZones.form.inertia.error.mustBeAboveZero"),
+      loiteringMin: t(
+        "masksAndZones.form.loiteringTime.error.mustBeGreaterOrEqualZero",
       ),
-      lineB: createOptionalZoneNumberSchema(
-        0.1,
-        t("masksAndZones.form.distance.error.text"),
+      unfinishedPolygon: t(
+        "masksAndZones.form.polygonDrawing.error.mustBeFinished",
       ),
-      lineC: createOptionalZoneNumberSchema(
-        0.1,
-        t("masksAndZones.form.distance.error.text"),
+      distanceMin: t("masksAndZones.form.distance.error.text"),
+      distanceRequired: t("masksAndZones.form.distance.error.mustBeFilled"),
+      speedMin: t("masksAndZones.form.speed.error.mustBeGreaterOrEqualTo"),
+      speedLoiteringConflict: t(
+        "masksAndZones.zones.speedThreshold.toast.error.loiteringTimeError",
       ),
-      lineD: createOptionalZoneNumberSchema(
-        0.1,
-        t("masksAndZones.form.distance.error.text"),
-      ),
-      speed_threshold: createOptionalZoneNumberSchema(
-        0.1,
-        t("masksAndZones.form.speed.error.mustBeGreaterOrEqualTo"),
-      ),
-    })
-    .refine(
-      (data) => {
-        if (data.speedEstimation) {
-          return !!data.lineA && !!data.lineB && !!data.lineC && !!data.lineD;
-        }
-        return true;
-      },
-      {
-        message: t("masksAndZones.form.distance.error.mustBeFilled"),
-        path: ["speedEstimation"],
-      },
-    )
-    .refine(
-      (data) => {
-        // Prevent speed estimation when loitering_time is greater than 0
-        return !(
-          data.speedEstimation &&
-          data.loitering_time &&
-          data.loitering_time > 0
-        );
-      },
-      {
-        message: t(
-          "masksAndZones.zones.speedThreshold.toast.error.loiteringTimeError",
-        ),
-        path: ["loitering_time"],
-      },
-    );
+    },
+  );
 
   // Resolve zone data: profile zone takes priority over base
   const resolvedZoneData = useMemo(() => {

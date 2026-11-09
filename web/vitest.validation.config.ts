@@ -14,6 +14,7 @@ export default defineConfig({
       "src/lib/validation/classificationSchemas.test.ts",
       "src/lib/validation/triggerSchemas.test.ts",
       "src/lib/validation/groupSchemas.test.ts",
+      "src/lib/validation/zoneSchemas.test.ts",
     ],
     globals: false,
   },
