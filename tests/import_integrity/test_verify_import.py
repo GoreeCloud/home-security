@@ -20,6 +20,7 @@ COPY_PATHS = (
     "web/src/lib/validation/authSchemas.ts", "web/src/lib/validation/authSchemas.test.ts",
     "web/src/lib/validation/numericSchemas.ts", "web/src/lib/validation/numericSchemas.test.ts",
     "web/vitest.validation.config.ts", "web/vitest.dom-validation.config.ts",
+    "web/playwright.validation.config.ts", "web/tests/e2e/login.validation.spec.ts",
     "web/src/components/auth/AuthForm.tsx", "web/src/components/auth/AuthForm.dom.test.tsx",
     ".github/workflows/web-validation.yml",
     *sorted(REQUIRED_ICONS),
@@ -233,6 +234,32 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(p.read_text().replace(
             "npx --no-install vitest run --config vitest.dom-validation.config.ts",
             "echo fake-ui-test",
+        ))
+        self.assertTrue(any("Web CI missing reviewed dependency/build action" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_browser_auth_network_escape(self):
+        p = self.root / "web/tests/e2e/login.validation.spec.ts"
+        p.write_text(p.read_text().replace('route.abort("blockedbyclient")', "route.continue()"))
+        self.assertTrue(any("no-network acceptance" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_unmocked_proxied_auth_status(self):
+        p = self.root / "web/tests/e2e/login.validation.spec.ts"
+        p.write_text(p.read_text().replace(
+            'target.pathname === "/api/auth/first_time_login"',
+            'target.pathname === "/auth/first_time_login"',
+        ))
+        self.assertTrue(any("no-network acceptance" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_unscoped_browser_server(self):
+        p = self.root / "web/playwright.validation.config.ts"
+        p.write_text(p.read_text().replace("127.0.0.1:4179", "0.0.0.0:4179"))
+        self.assertTrue(any("isolated loopback Chromium" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_bypassed_real_browser_ci(self):
+        p = self.root / ".github/workflows/web-validation.yml"
+        p.write_text(p.read_text().replace(
+            "npx --no-install playwright test --config playwright.validation.config.ts",
+            "echo fake-browser-check",
         ))
         self.assertTrue(any("Web CI missing reviewed dependency/build action" in issue for issue in verify_repository(self.root)))
 

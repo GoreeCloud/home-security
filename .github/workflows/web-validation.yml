@@ -52,3 +52,9 @@ jobs:
       - name: Typecheck and compile frontend without publishing
         working-directory: web
         run: npm run build
+      - name: Install reviewed Chromium in ephemeral runner
+        working-directory: web
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Test actual login in loopback-only Chromium with network blocked
+        working-directory: web
+        run: npx --no-install playwright test --config playwright.validation.config.ts

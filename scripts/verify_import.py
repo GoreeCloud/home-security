@@ -265,6 +265,24 @@ def verify_repository(root: Path) -> list[str]:
             problems.append("Missing real network-free login DOM validation test")
         if login_source.count('<FormMessage role="alert" />') != 2:
             problems.append("Login must render accessible field validation errors for username and password")
+        browser_config = text("web/playwright.validation.config.ts")
+        browser_test = text("web/tests/e2e/login.validation.spec.ts")
+        if (
+            "@playwright/test" not in browser_config
+            or '127.0.0.1:4179' not in browser_config
+            or "reuseExistingServer: false" not in browser_config
+        ):
+            problems.append("Real login browser test must run in isolated loopback Chromium")
+        if (
+            'page.route("**/*"' not in browser_test
+            or 'route.abort("blockedbyclient")' not in browser_test
+            or "authenticationSubmitted" not in browser_test
+            or "Username is required" not in browser_test
+            or "Password is required" not in browser_test
+            or 'target.pathname === "/api/auth/first_time_login"' not in browser_test
+            or 'target.pathname.startsWith("/api/")' not in browser_test
+        ):
+            problems.append("Missing real browser login-validation and no-network acceptance coverage")
         numeric_source = text("web/src/lib/validation/numericSchemas.ts")
         numeric_tests = text("web/src/lib/validation/numericSchemas.test.ts")
         for builder in (
@@ -314,7 +332,7 @@ def verify_repository(root: Path) -> list[str]:
         if expected not in docs_validation:
             problems.append("Docs CI missing both supported Node versions or safe build step: " + expected)
     web_validation = text(".github/workflows/web-validation.yml")
-    for expected in ("npm ci --ignore-scripts", "npx --no-install patch-package", "npx --no-install vitest run --config vitest.validation.config.ts", "npx --no-install vitest run --config vitest.dom-validation.config.ts", "npm run build", "node-version: '24'"):
+    for expected in ("npm ci --ignore-scripts", "npx --no-install patch-package", "npx --no-install vitest run --config vitest.validation.config.ts", "npx --no-install vitest run --config vitest.dom-validation.config.ts", "npx --no-install playwright install --with-deps chromium", "npx --no-install playwright test --config playwright.validation.config.ts", "npm run build", "node-version: '24'"):
         if expected not in web_validation:
             problems.append("Web CI missing reviewed dependency/build action: " + expected)
 
