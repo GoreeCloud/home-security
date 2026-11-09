@@ -228,14 +228,38 @@ def verify_repository(root: Path) -> list[str]:
             problems.append("Reintroduced unused sort-by/object-path vulnerable dependency chain")
         if web_package.get("dependencies") != web_packages.get("", {}).get("dependencies"):
             problems.append("Web direct dependencies and lockfile root are inconsistent")
+        # The Zod 3 resolver reads the removed ZodError.errors property.
+        # Keep the reviewed Zod 4 + resolver 5 pair pinned together.
+        for name, version in (("zod", "4.6.7"), ("@hookform/resolvers", "5.9.2")):
+            if web_package.get("dependencies", {}).get(name) != version:
+                problems.append("Zod 4 package pair manifest drift: " + name)
+            if web_packages.get("node_modules/" + name, {}).get("version") != version:
+                problems.append("Zod 4 package pair lockfile drift: " + name)
         # Preserve test coverage independently of the unfinished Zod 4 upgrade.
         schema_source = text("web/src/lib/validation/authSchemas.ts")
         schema_tests = text("web/src/lib/validation/authSchemas.test.ts")
-        for builder in ("createLoginSchema", "createUserSchema", "createRoleSchema"):
+        for builder in (
+            "createLoginSchema",
+            "createUserSchema",
+            "createRoleSchema",
+            "createSetPasswordSchema",
+            "createPasswordChangeSchema",
+            "createPasswordResetSchema",
+            "createRoleCameraAccessSchema",
+        ):
             if builder not in schema_source or builder not in schema_tests:
                 problems.append("Missing real auth validation regression test: " + builder)
         test_config = text("web/vitest.validation.config.ts")
-        if 'environment: "node"' not in test_config or 'include: ["src/lib/validation/authSchemas.test.ts"]' not in test_config:
+        if (
+            'environment: "node"' not in test_config
+            or "authSchemas.test.ts" not in test_config
+            or "numericSchemas.test.ts" not in test_config
+            or "maskSchemas.test.ts" not in test_config
+            or "classificationSchemas.test.ts" not in test_config
+            or "triggerSchemas.test.ts" not in test_config
+            or "groupSchemas.test.ts" not in test_config
+            or "zoneSchemas.test.ts" not in test_config
+        ):
             problems.append("Validation tests must run with the isolated Node-only config")
         login_dom_config = text("web/vitest.dom-validation.config.ts")
         login_dom_test = text("web/src/components/auth/AuthForm.dom.test.tsx")
@@ -246,6 +270,113 @@ def verify_repository(root: Path) -> list[str]:
             problems.append("Missing real network-free login DOM validation test")
         if login_source.count('<FormMessage role="alert" />') != 2:
             problems.append("Login must render accessible field validation errors for username and password")
+        browser_config = text("web/playwright.validation.config.ts")
+        browser_test = text("web/tests/e2e/login.validation.spec.ts")
+        if (
+            "@playwright/test" not in browser_config
+            or '127.0.0.1:4179' not in browser_config
+            or "reuseExistingServer: false" not in browser_config
+        ):
+            problems.append("Real login browser test must run in isolated loopback Chromium")
+        if (
+            'page.route("**/*"' not in browser_test
+            or 'route.abort("blockedbyclient")' not in browser_test
+            or "authenticationSubmitted" not in browser_test
+            or "Username is required" not in browser_test
+            or "Password is required" not in browser_test
+            or 'target.pathname === "/api/auth/first_time_login"' not in browser_test
+            or 'target.pathname.startsWith("/api/")' not in browser_test
+        ):
+            problems.append("Missing real browser login-validation and no-network acceptance coverage")
+        if (
+            browser_test.count('page.route("**/api/login"') != 2
+            or browser_test.count('["x-csrf-token"]') != 2
+            or "status: 401" not in browser_test
+            or "status: 429" not in browser_test
+            or "Login failed" not in browser_test
+            or "Exceeded rate limit" not in browser_test
+        ):
+            problems.append("Missing synthetic login CSRF and rejection-path browser tests")
+        mask_source = text("web/src/lib/validation/maskSchemas.ts")
+        mask_tests = text("web/src/lib/validation/maskSchemas.test.ts")
+        for name, ui_file in (
+            ("createMotionMaskSchema", "web/src/components/settings/MotionMaskEditPane.tsx"),
+            ("createObjectMaskSchema", "web/src/components/settings/ObjectMaskEditPane.tsx"),
+        ):
+            if (
+                name not in mask_source
+                or name not in mask_tests
+                or name + "(" not in text(ui_file)
+            ):
+                problems.append("Missing actual privacy-mask validation regression: " + name)
+        classification_source = text("web/src/lib/validation/classificationSchemas.ts")
+        classification_tests = text("web/src/lib/validation/classificationSchemas.test.ts")
+        classification_ui = text("web/src/components/classification/wizard/Step1NameAndDefine.tsx")
+        if (
+            "createClassificationDefinitionSchema" not in classification_source
+            or "createClassificationDefinitionSchema(" not in classification_ui
+            or "createClassificationDefinitionSchema(" not in classification_tests
+            or "modelType" not in classification_tests
+            or "classesUnique" not in classification_tests
+            or "stateRequiresTwoClasses" not in classification_tests
+            or "objectLabelRequired" not in classification_tests
+            or "objectTypeRequired" not in classification_tests
+        ):
+            problems.append("Missing actual classification wizard Zod4 resolver contract regression")
+        trigger_source = text("web/src/lib/validation/triggerSchemas.ts")
+        trigger_tests = text("web/src/lib/validation/triggerSchemas.test.ts")
+        trigger_ui = text("web/src/components/overlay/CreateTriggerDialog.tsx")
+        if (
+            "createTriggerSchema(" not in trigger_source
+            or "createTriggerSchema(" not in trigger_tests
+            or "createTriggerSchema(" not in trigger_ui
+            or "alreadyExists" not in trigger_tests
+            or "minThreshold" not in trigger_tests
+            or "maxThreshold" not in trigger_tests
+            or "external_command" not in trigger_tests
+        ):
+            problems.append("Missing actual camera-trigger action validation regression")
+        group_source = text("web/src/lib/validation/groupSchemas.ts")
+        group_tests = text("web/src/lib/validation/groupSchemas.test.ts")
+        group_ui = text("web/src/components/filter/CameraGroupSelector.tsx")
+        if (
+            "createCameraGroupSchema(" not in group_source
+            or "createCameraGroupSchema(" not in group_tests
+            or "createCameraGroupSchema(" not in group_ui
+            or "result.values.name" not in group_tests
+            or "messages.duplicate" not in group_tests
+            or "messages.invalidReservedName" not in group_tests
+            or "messages.noPeriod" not in group_tests
+        ):
+            problems.append("Missing camera-group name normalization and authorization-safe validation regression")
+        zone_source = text("web/src/lib/validation/zoneSchemas.ts")
+        zone_tests = text("web/src/lib/validation/zoneSchemas.test.ts")
+        zone_ui = text("web/src/components/settings/ZoneEditPane.tsx")
+        if (
+            "createZoneSchema(" not in zone_source
+            or "createZoneSchema(" not in zone_ui
+            or "createZoneSchema(" not in zone_tests
+            or "speedLoiteringConflict" not in zone_tests
+            or "distanceRequired" not in zone_tests
+            or "unfinishedPolygon" not in zone_tests
+            or "parsed.values" not in zone_tests
+            or "normalized zone ID containing only whitespace" not in zone_tests
+            or "whitespace-only zone display names" not in zone_tests
+            or ".refine((value) => value.length >= 2" not in zone_source
+            or ".refine((value) => value.trim().length >= 2" not in zone_source
+        ):
+            problems.append("Missing actual zone polygon Zod4 cross-field validation regression")
+        numeric_source = text("web/src/lib/validation/numericSchemas.ts")
+        numeric_tests = text("web/src/lib/validation/numericSchemas.test.ts")
+        for builder in (
+            "createOnvifPortSchema",
+            "createOptionalClassificationIntervalSchema",
+            "createZoneInertiaSchema",
+            "createOptionalZoneNumberSchema",
+            "hasPositiveZoneLoiteringTime",
+        ):
+            if builder not in numeric_source or builder not in numeric_tests:
+                problems.append("Missing numeric form coercion regression test: " + builder)
     except (ValueError, KeyError, TypeError):
         problems.append("Unable to validate web security dependencies or JSON manifest")
 
@@ -284,7 +415,7 @@ def verify_repository(root: Path) -> list[str]:
         if expected not in docs_validation:
             problems.append("Docs CI missing both supported Node versions or safe build step: " + expected)
     web_validation = text(".github/workflows/web-validation.yml")
-    for expected in ("npm ci --ignore-scripts", "npx --no-install patch-package", "npx --no-install vitest run --config vitest.validation.config.ts", "npx --no-install vitest run --config vitest.dom-validation.config.ts", "npm run build", "node-version: '24'"):
+    for expected in ("npm ci --ignore-scripts", "npm audit --package-lock-only --omit=dev --audit-level=high --registry=https://registry.npmjs.org", "npx --no-install patch-package", "npx --no-install vitest run --config vitest.validation.config.ts", "npx --no-install vitest run --config vitest.dom-validation.config.ts", "npx --no-install playwright install --with-deps chromium", "npx --no-install playwright test --config playwright.validation.config.ts", "npm run build", "node-version: '24'"):
         if expected not in web_validation:
             problems.append("Web CI missing reviewed dependency/build action: " + expected)
 

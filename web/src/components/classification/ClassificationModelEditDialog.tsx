@@ -41,6 +41,7 @@ import { LuPlus, LuX } from "react-icons/lu";
 import { toast } from "sonner";
 import useSWR, { mutate } from "swr";
 import { z } from "zod";
+import { createOptionalClassificationIntervalSchema } from "@/lib/validation/numericSchemas";
 
 type ClassificationModelEditDialogProps = {
   open: boolean;
@@ -113,7 +114,7 @@ export default function ClassificationModelEditDialog({
     const sharedFields = {
       enabled: z.boolean(),
       saveAttempts: z.coerce
-        .number({ message: t("edit.errors.saveAttemptsInvalid") })
+        .number<number | string>({ message: t("edit.errors.saveAttemptsInvalid") })
         .int(t("edit.errors.saveAttemptsInvalid"))
         .min(0, t("edit.errors.saveAttemptsInvalid")),
     };
@@ -131,14 +132,8 @@ export default function ClassificationModelEditDialog({
       return z.object({
         ...sharedFields,
         motion: z.boolean(),
-        interval: z.preprocess(
-          (val) =>
-            val === "" || val === null || val === undefined ? undefined : val,
-          z.coerce
-            .number({ message: t("edit.errors.intervalInvalid") })
-            .int(t("edit.errors.intervalInvalid"))
-            .positive(t("edit.errors.intervalInvalid"))
-            .optional(),
+        interval: createOptionalClassificationIntervalSchema(
+          t("edit.errors.intervalInvalid"),
         ),
         classes: z
           .array(z.string())
@@ -162,7 +157,11 @@ export default function ClassificationModelEditDialog({
     }
   }, [isObjectModel, t]);
 
-  const form = useForm<ObjectFormData | StateFormData>({
+  const form = useForm<
+    z.input<typeof formSchema>,
+    unknown,
+    z.output<typeof formSchema>
+  >({
     resolver: zodResolver(formSchema),
     defaultValues: isObjectModel
       ? ({
@@ -232,7 +231,7 @@ export default function ClassificationModelEditDialog({
         (key) => key !== "none",
       );
       if (classes.length > 0) {
-        (form as ReturnType<typeof useForm<StateFormData>>).setValue(
+        form.setValue(
           "classes",
           classes,
         );
@@ -241,17 +240,15 @@ export default function ClassificationModelEditDialog({
   }, [dataset, isStateModel, open, form]);
 
   const watchedClasses = isStateModel
-    ? (form as ReturnType<typeof useForm<StateFormData>>).watch("classes")
+    ? form.watch("classes")
     : undefined;
   const watchedObjectType = isObjectModel
-    ? (form as ReturnType<typeof useForm<ObjectFormData>>).watch("objectType")
+    ? form.watch("objectType")
     : undefined;
 
   const handleAddClass = useCallback(() => {
-    const currentClasses = (
-      form as ReturnType<typeof useForm<StateFormData>>
-    ).getValues("classes");
-    (form as ReturnType<typeof useForm<StateFormData>>).setValue(
+    const currentClasses = form.getValues("classes");
+    form.setValue(
       "classes",
       [...currentClasses, ""],
       {
@@ -262,20 +259,18 @@ export default function ClassificationModelEditDialog({
 
   const handleRemoveClass = useCallback(
     (index: number) => {
-      const currentClasses = (
-        form as ReturnType<typeof useForm<StateFormData>>
-      ).getValues("classes");
+      const currentClasses = form.getValues("classes");
       const newClasses = currentClasses.filter((_, i) => i !== index);
 
       // Ensure at least one field remains (even if empty)
       if (newClasses.length === 0) {
-        (form as ReturnType<typeof useForm<StateFormData>>).setValue(
+        form.setValue(
           "classes",
           [""],
           { shouldValidate: true },
         );
       } else {
-        (form as ReturnType<typeof useForm<StateFormData>>).setValue(
+        form.setValue(
           "classes",
           newClasses,
           { shouldValidate: true },
@@ -584,10 +579,7 @@ export default function ClassificationModelEditDialog({
                     {watchedClasses?.map((_: string, index: number) => (
                       <FormField
                         key={index}
-                        control={
-                          (form as ReturnType<typeof useForm<StateFormData>>)
-                            .control
-                        }
+                        control={form.control}
                         name={`classes.${index}` as const}
                         render={({ field }) => (
                           <FormItem>

@@ -21,6 +21,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { createOnvifPortSchema } from "@/lib/validation/numericSchemas";
 import { useTranslation } from "react-i18next";
 import { useState, useCallback, useMemo } from "react";
 import { LuEye, LuEyeOff } from "react-icons/lu";
@@ -81,7 +82,7 @@ export default function Step1NameCamera({
       username: z.string().optional(),
       password: z.string().optional(),
       brandTemplate: z.enum(CAMERA_BRAND_VALUES).optional(),
-      onvifPort: z.coerce.number().int().min(1).max(65535).optional(),
+      onvifPort: createOnvifPortSchema(),
       useDigestAuth: z.boolean().optional(),
       customUrl: z
         .string()
@@ -107,7 +108,11 @@ export default function Step1NameCamera({
       },
     );
 
-  const form = useForm<z.infer<typeof step1FormData>>({
+  const form = useForm<
+    z.input<typeof step1FormData>,
+    unknown,
+    z.output<typeof step1FormData>
+  >({
     resolver: zodResolver(step1FormData),
     defaultValues: {
       cameraName: wizardData.cameraName || "",
@@ -147,11 +152,8 @@ export default function Step1NameCamera({
   };
 
   const handleContinue = useCallback(async () => {
-    const isValid = await form.trigger();
-    if (isValid) {
-      const data = form.getValues();
-      onNext({ ...data, probeMode });
-    }
+    // Use the resolver's parsed output, not uncoerced field strings.
+    await form.handleSubmit((data) => onNext({ ...data, probeMode }))();
   }, [form, probeMode, onNext]);
 
   return (

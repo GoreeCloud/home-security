@@ -11,6 +11,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { createRoleCameraAccessSchema } from "@/lib/validation/authSchemas";
 import { Switch } from "@/components/ui/switch";
 import ActivityIndicator from "@/components/indicators/activity-indicator";
 import { useState } from "react";
@@ -55,11 +56,9 @@ export default function EditRoleCamerasDialog({
         (config.cameras[b]?.ui?.order ?? 0),
     );
 
-  const formSchema = z.object({
-    cameras: z
-      .array(z.string())
-      .min(1, t("roles.dialog.form.cameras.required")),
-  });
+  const formSchema = createRoleCameraAccessSchema(
+    t("roles.dialog.form.cameras.required"),
+  );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

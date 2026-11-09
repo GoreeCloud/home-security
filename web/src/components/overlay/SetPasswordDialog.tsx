@@ -27,6 +27,7 @@ import ActivityIndicator from "../indicators/activity-indicator";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { createSetPasswordSchema } from "@/lib/validation/authSchemas";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import {
   calculatePasswordStrength,
@@ -71,36 +72,18 @@ export default function SetPasswordDialog({
   const [showConfirmPassword, setShowConfirmPassword] =
     useState<boolean>(false);
 
-  // Create form schema with conditional old password requirement
-  const formSchema = useMemo(() => {
-    const baseSchema = {
-      password: z
-        .string()
-        .min(12, t("users.dialog.form.password.requirements.length")),
-      confirmPassword: z.string(),
-    };
-
-    if (username) {
-      return z
-        .object({
-          oldPassword: z
-            .string()
-            .min(1, t("users.dialog.passwordSetting.currentPasswordRequired")),
-          ...baseSchema,
-        })
-        .refine((data) => data.password === data.confirmPassword, {
-          message: t("users.dialog.passwordSetting.doNotMatch"),
-          path: ["confirmPassword"],
-        });
-    } else {
-      return z
-        .object(baseSchema)
-        .refine((data) => data.password === data.confirmPassword, {
-          message: t("users.dialog.passwordSetting.doNotMatch"),
-          path: ["confirmPassword"],
-        });
-    }
-  }, [username, t]);
+  // Preserve the distinction between self-service password changes and resets.
+  const formSchema = useMemo(
+    () =>
+      createSetPasswordSchema(Boolean(username), {
+        passwordLength: t("users.dialog.form.password.requirements.length"),
+        oldPasswordRequired: t(
+          "users.dialog.passwordSetting.currentPasswordRequired",
+        ),
+        passwordsDoNotMatch: t("users.dialog.passwordSetting.doNotMatch"),
+      }),
+    [username, t],
+  );
 
   type FormValues = z.infer<typeof formSchema>;
 

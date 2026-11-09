@@ -18,7 +18,19 @@ COPY_PATHS = (
     ".github/dependabot.yml", ".github/workflows/import-integrity.yml",
     ".github/workflows/docs-validation.yml", "web/package.json", "web/package-lock.json",
     "web/src/lib/validation/authSchemas.ts", "web/src/lib/validation/authSchemas.test.ts",
+    "web/src/lib/validation/numericSchemas.ts", "web/src/lib/validation/numericSchemas.test.ts",
+    "web/src/lib/validation/maskSchemas.ts", "web/src/lib/validation/maskSchemas.test.ts",
+    "web/src/lib/validation/classificationSchemas.ts", "web/src/lib/validation/classificationSchemas.test.ts",
+    "web/src/lib/validation/triggerSchemas.ts", "web/src/lib/validation/triggerSchemas.test.ts",
+    "web/src/lib/validation/groupSchemas.ts", "web/src/lib/validation/groupSchemas.test.ts",
+    "web/src/lib/validation/zoneSchemas.ts", "web/src/lib/validation/zoneSchemas.test.ts",
+    "web/src/components/settings/ZoneEditPane.tsx",
+    "web/src/components/filter/CameraGroupSelector.tsx",
+    "web/src/components/overlay/CreateTriggerDialog.tsx",
+    "web/src/components/classification/wizard/Step1NameAndDefine.tsx",
+    "web/src/components/settings/MotionMaskEditPane.tsx", "web/src/components/settings/ObjectMaskEditPane.tsx",
     "web/vitest.validation.config.ts", "web/vitest.dom-validation.config.ts",
+    "web/playwright.validation.config.ts", "web/tests/e2e/login.validation.spec.ts",
     "web/src/components/auth/AuthForm.tsx", "web/src/components/auth/AuthForm.dom.test.tsx",
     ".github/workflows/web-validation.yml",
     *sorted(REQUIRED_ICONS),
@@ -234,6 +246,195 @@ class ImportIntegrityTests(unittest.TestCase):
             "echo fake-ui-test",
         ))
         self.assertTrue(any("Web CI missing reviewed dependency/build action" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_browser_auth_network_escape(self):
+        p = self.root / "web/tests/e2e/login.validation.spec.ts"
+        p.write_text(p.read_text().replace('route.abort("blockedbyclient")', "route.continue()"))
+        self.assertTrue(any("no-network acceptance" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_unmocked_proxied_auth_status(self):
+        p = self.root / "web/tests/e2e/login.validation.spec.ts"
+        p.write_text(p.read_text().replace(
+            'target.pathname === "/api/auth/first_time_login"',
+            'target.pathname === "/auth/first_time_login"',
+        ))
+        self.assertTrue(any("no-network acceptance" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_csrf_browser_assertion(self):
+        p = self.root / "web/tests/e2e/login.validation.spec.ts"
+        p.write_text(p.read_text().replace('["x-csrf-token"]', '["x-test-token"]'))
+        self.assertTrue(any("synthetic login CSRF" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_rate_limit_browser_acceptance(self):
+        p = self.root / "web/tests/e2e/login.validation.spec.ts"
+        p.write_text(p.read_text().replace("status: 429", "status: 418"))
+        self.assertTrue(any("synthetic login CSRF" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_unscoped_browser_server(self):
+        p = self.root / "web/playwright.validation.config.ts"
+        p.write_text(p.read_text().replace("127.0.0.1:4179", "0.0.0.0:4179"))
+        self.assertTrue(any("isolated loopback Chromium" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_bypassed_real_browser_ci(self):
+        p = self.root / ".github/workflows/web-validation.yml"
+        p.write_text(p.read_text().replace(
+            "npx --no-install playwright test --config playwright.validation.config.ts",
+            "echo fake-browser-check",
+        ))
+        self.assertTrue(any("Web CI missing reviewed dependency/build action" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_mask_privacy_regressions(self):
+        p = self.root / "web/src/lib/validation/maskSchemas.test.ts"
+        p.write_text('test("not the real privacy-mask tests", () => {})')
+        self.assertTrue(any("Missing actual privacy-mask validation regression" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disconnected_motion_mask_ui_validator(self):
+        p = self.root / "web/src/components/settings/MotionMaskEditPane.tsx"
+        p.write_text(p.read_text().replace("createMotionMaskSchema(", "createMotionMaskUnchecked("))
+        self.assertTrue(any("createMotionMaskSchema" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disconnected_object_mask_ui_validator(self):
+        p = self.root / "web/src/components/settings/ObjectMaskEditPane.tsx"
+        p.write_text(p.read_text().replace("createObjectMaskSchema(", "createObjectMaskUnchecked("))
+        self.assertTrue(any("createObjectMaskSchema" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_mask_test_from_node_config(self):
+        p = self.root / "web/vitest.validation.config.ts"
+        p.write_text(p.read_text().replace('"src/lib/validation/maskSchemas.test.ts",', ""))
+        self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disconnected_classification_wizard(self):
+        p = self.root / "web/src/components/classification/wizard/Step1NameAndDefine.tsx"
+        p.write_text(p.read_text().replace(
+            "createClassificationDefinitionSchema(", "createUncheckedClassificationSchema(",
+        ))
+        self.assertTrue(any("classification wizard Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_real_classification_resolver_test(self):
+        p = self.root / "web/src/lib/validation/classificationSchemas.test.ts"
+        p.write_text('test("placeholder", () => {})')
+        self.assertTrue(any("classification wizard Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_removed_classifier_conditional_checks(self):
+        p = self.root / "web/src/lib/validation/classificationSchemas.test.ts"
+        p.write_text(p.read_text().replace("stateRequiresTwoClasses", "missingStateTwoClassRule"))
+        self.assertTrue(any("classification wizard Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_classification_tests_from_node_config(self):
+        p = self.root / "web/vitest.validation.config.ts"
+        p.write_text(p.read_text().replace(
+            '"src/lib/validation/classificationSchemas.test.ts",', "",
+        ))
+        self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_unreviewed_trigger_action_schema_test(self):
+        p = self.root / "web/src/lib/validation/triggerSchemas.test.ts"
+        p.write_text('test("fake trigger test", () => {})')
+        self.assertTrue(any("camera-trigger action validation" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disconnected_trigger_ui_schema(self):
+        p = self.root / "web/src/components/overlay/CreateTriggerDialog.tsx"
+        p.write_text(p.read_text().replace("createTriggerSchema(", "createUnsafeTriggerSchema("))
+        self.assertTrue(any("camera-trigger action validation" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_removed_trigger_threshold_review(self):
+        p = self.root / "web/src/lib/validation/triggerSchemas.test.ts"
+        p.write_text(p.read_text().replace("maxThreshold", "removedMaximumThreshold"))
+        self.assertTrue(any("camera-trigger action validation" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disabled_trigger_test_in_ci_config(self):
+        p = self.root / "web/vitest.validation.config.ts"
+        p.write_text(p.read_text().replace(
+            '"src/lib/validation/triggerSchemas.test.ts",', "",
+        ))
+        self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_group_form_normalization_test(self):
+        p = self.root / "web/src/lib/validation/groupSchemas.test.ts"
+        p.write_text('test("fake camera-group test", () => {})')
+        self.assertTrue(any("camera-group name normalization" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_camera_group_form_disconnected_from_schema(self):
+        p = self.root / "web/src/components/filter/CameraGroupSelector.tsx"
+        p.write_text(p.read_text().replace(
+            "createCameraGroupSchema(", "createUnsafeCameraGroupSchema(",
+        ))
+        self.assertTrue(any("camera-group name normalization" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_reserved_default_camera_group_test(self):
+        p = self.root / "web/src/lib/validation/groupSchemas.test.ts"
+        p.write_text(p.read_text().replace("messages.invalidReservedName", "removedReservedRule"))
+        self.assertTrue(any("camera-group name normalization" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disabled_camera_group_test_ci(self):
+        p = self.root / "web/vitest.validation.config.ts"
+        p.write_text(p.read_text().replace('"src/lib/validation/groupSchemas.test.ts",', ""))
+        self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disabled_web_security_advisory_ci_gate(self):
+        p = self.root / ".github/workflows/web-validation.yml"
+        p.write_text(p.read_text().replace(
+            "npm audit --package-lock-only --omit=dev --audit-level=high --registry=https://registry.npmjs.org",
+            "echo ignored-production-advisories",
+        ))
+        self.assertTrue(any("Web CI missing reviewed dependency/build action" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disconnected_zone_editor_schema(self):
+        p = self.root / "web/src/components/settings/ZoneEditPane.tsx"
+        p.write_text(p.read_text().replace("createZoneSchema(", "createUncheckedZoneSchema("))
+        self.assertTrue(any("zone polygon Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_zone_cross_field_validation_tests(self):
+        p = self.root / "web/src/lib/validation/zoneSchemas.test.ts"
+        p.write_text('test("placeholder", () => {})')
+        self.assertTrue(any("zone polygon Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disabled_zone_test_in_node_config(self):
+        p = self.root / "web/vitest.validation.config.ts"
+        p.write_text(p.read_text().replace('"src/lib/validation/zoneSchemas.test.ts",', ""))
+        self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_zone_speed_loitering_regression(self):
+        p = self.root / "web/src/lib/validation/zoneSchemas.test.ts"
+        p.write_text(p.read_text().replace("speedLoiteringConflict", "ruleRemoved"))
+        self.assertTrue(any("zone polygon Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_removed_zone_post_normalization_name_guard(self):
+        p = self.root / "web/src/lib/validation/zoneSchemas.ts"
+        p.write_text(p.read_text().replace(
+            ".refine((value) => value.length >= 2, { message: messages.nameMinLength })",
+            "",
+        ))
+        self.assertTrue(any("zone polygon Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_removed_whitespace_only_zone_friendly_name_guard(self):
+        p = self.root / "web/src/lib/validation/zoneSchemas.ts"
+        p.write_text(p.read_text().replace(
+            ".refine((value) => value.trim().length >= 2, { message: messages.nameMinLength })",
+            "",
+        ))
+        self.assertTrue(any("zone polygon Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_numeric_schema_regressions(self):
+        p = self.root / "web/src/lib/validation/numericSchemas.test.ts"
+        p.write_text("test('not the real tests', () => {})")
+        self.assertTrue(any("Missing numeric form coercion regression test" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_zod_v3_reintroduction_in_candidate(self):
+        import json
+        p = self.root / "web/package-lock.json"
+        x = json.loads(p.read_text())
+        x["packages"]["node_modules/zod"]["version"] = "3.25.76"
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("Zod 4 package pair lockfile drift" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_incompatible_form_resolver_in_candidate(self):
+        import json
+        p = self.root / "web/package-lock.json"
+        x = json.loads(p.read_text())
+        x["packages"]["node_modules/@hookform/resolvers"]["version"] = "3.10.0"
+        p.write_text(json.dumps(x))
+        self.assertTrue(any("Zod 4 package pair lockfile drift" in issue for issue in verify_repository(self.root)))
 
     def test_detects_missing_docs_node_matrix(self):
         p = self.root / ".github/workflows/docs-validation.yml"

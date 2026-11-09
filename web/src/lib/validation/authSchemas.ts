@@ -60,3 +60,53 @@ export function createRoleSchema(
     cameras: z.array(z.string()).min(1, messages.camerasRequired),
   });
 }
+
+export type SetPasswordMessages = {
+  passwordLength: string;
+  oldPasswordRequired: string;
+  passwordsDoNotMatch: string;
+};
+
+/** Self-service password changes require proof of the current password. */
+export function createPasswordChangeSchema(messages: SetPasswordMessages) {
+  return z
+    .object({
+      oldPassword: z.string().min(1, messages.oldPasswordRequired),
+      password: z.string().min(12, messages.passwordLength),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: messages.passwordsDoNotMatch,
+      path: ["confirmPassword"],
+    });
+}
+
+/** Administrative password resets do not require the user's old password. */
+export function createPasswordResetSchema(messages: SetPasswordMessages) {
+  return z
+    .object({
+      password: z.string().min(12, messages.passwordLength),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: messages.passwordsDoNotMatch,
+      path: ["confirmPassword"],
+    });
+}
+
+/** Runtime UI branch delegates to the same explicitly typed, tested schemas. */
+export function createSetPasswordSchema(
+  requireOldPassword: boolean,
+  messages: SetPasswordMessages,
+) {
+  return requireOldPassword
+    ? createPasswordChangeSchema(messages)
+    : createPasswordResetSchema(messages);
+}
+
+/** A role must retain at least one camera selection. */
+export function createRoleCameraAccessSchema(requiredMessage: string) {
+  return z.object({
+    cameras: z.array(z.string()).min(1, requiredMessage),
+  });
+}

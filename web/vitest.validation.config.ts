@@ -7,7 +7,15 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/lib/validation/authSchemas.test.ts"],
+    include: [
+      "src/lib/validation/authSchemas.test.ts",
+      "src/lib/validation/numericSchemas.test.ts",
+      "src/lib/validation/maskSchemas.test.ts",
+      "src/lib/validation/classificationSchemas.test.ts",
+      "src/lib/validation/triggerSchemas.test.ts",
+      "src/lib/validation/groupSchemas.test.ts",
+      "src/lib/validation/zoneSchemas.test.ts",
+    ],
     globals: false,
   },
 });
