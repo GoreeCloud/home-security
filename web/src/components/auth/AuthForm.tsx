@@ -16,6 +16,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -116,6 +117,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
                     {...field}
                   />
                 </FormControl>
+                <FormMessage role="alert" />
               </FormItem>
             )}
           />
@@ -131,6 +133,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
                     {...field}
                   />
                 </FormControl>
+                <FormMessage role="alert" />
               </FormItem>
             )}
           />
