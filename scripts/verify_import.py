@@ -254,6 +254,7 @@ def verify_repository(root: Path) -> list[str]:
             'environment: "node"' not in test_config
             or "authSchemas.test.ts" not in test_config
             or "numericSchemas.test.ts" not in test_config
+            or "maskSchemas.test.ts" not in test_config
         ):
             problems.append("Validation tests must run with the isolated Node-only config")
         login_dom_config = text("web/vitest.dom-validation.config.ts")
@@ -292,6 +293,18 @@ def verify_repository(root: Path) -> list[str]:
             or "Exceeded rate limit" not in browser_test
         ):
             problems.append("Missing synthetic login CSRF and rejection-path browser tests")
+        mask_source = text("web/src/lib/validation/maskSchemas.ts")
+        mask_tests = text("web/src/lib/validation/maskSchemas.test.ts")
+        for name, ui_file in (
+            ("createMotionMaskSchema", "web/src/components/settings/MotionMaskEditPane.tsx"),
+            ("createObjectMaskSchema", "web/src/components/settings/ObjectMaskEditPane.tsx"),
+        ):
+            if (
+                name not in mask_source
+                or name not in mask_tests
+                or name + "(" not in text(ui_file)
+            ):
+                problems.append("Missing actual privacy-mask validation regression: " + name)
         numeric_source = text("web/src/lib/validation/numericSchemas.ts")
         numeric_tests = text("web/src/lib/validation/numericSchemas.test.ts")
         for builder in (

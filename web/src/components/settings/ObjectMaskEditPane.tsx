@@ -25,6 +25,7 @@ import useSWR from "swr";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, FormProvider } from "react-hook-form";
 import { z } from "zod";
+import { createObjectMaskSchema } from "@/lib/validation/maskSchemas";
 import { ObjectMaskFormValuesType, Polygon } from "@/types/canvas";
 import PolygonEditControls from "./PolygonEditControls";
 import { FaCheckCircle } from "react-icons/fa";
@@ -113,40 +114,21 @@ export default function ObjectMaskEditPane({
     return `object_mask_${count}`;
   }, [polygons]);
 
-  const formSchema = z.object({
-    name: z
-      .string()
-      .min(1, {
-        message: t("masksAndZones.form.id.error.mustNotBeEmpty"),
-      })
-      .refine(
-        (value: string) => {
-          // When editing, allow the same name
-          if (polygon?.name && value === polygon.name) {
-            return true;
-          }
-          // Check if mask ID already exists in global masks or filter masks
-          const globalMaskIds = Object.keys(cameraConfig?.objects.mask || {});
-          const filterMaskIds = Object.values(
-            cameraConfig?.objects.filters || {},
-          ).flatMap((filter) => Object.keys(filter.mask || {}));
-          return (
-            !globalMaskIds.includes(value) && !filterMaskIds.includes(value)
-          );
-        },
-        {
-          message: t("masksAndZones.form.id.error.alreadyExists"),
-        },
+  const formSchema = createObjectMaskSchema(
+    polygon?.name,
+    Object.keys(cameraConfig?.objects.mask || {}),
+    Object.values(cameraConfig?.objects.filters || {}).flatMap((filter) =>
+      Object.keys(filter.mask || {}),
+    ),
+    {
+      idRequired: t("masksAndZones.form.id.error.mustNotBeEmpty"),
+      idAlreadyExists: t("masksAndZones.form.id.error.alreadyExists"),
+      nameRequired: t("masksAndZones.form.name.error.mustNotBeEmpty"),
+      polygonMustBeFinished: t(
+        "masksAndZones.form.polygonDrawing.error.mustBeFinished",
       ),
-    friendly_name: z.string().min(1, {
-      message: t("masksAndZones.form.name.error.mustNotBeEmpty"),
-    }),
-    enabled: z.boolean(),
-    objects: z.string(),
-    isFinished: z.boolean().refine((val) => val === true, {
-      message: t("masksAndZones.form.polygonDrawing.error.mustBeFinished"),
-    }),
-  });
+    },
+  );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

@@ -10,6 +10,7 @@ export default defineConfig({
     include: [
       "src/lib/validation/authSchemas.test.ts",
       "src/lib/validation/numericSchemas.test.ts",
+      "src/lib/validation/maskSchemas.test.ts",
     ],
     globals: false,
   },

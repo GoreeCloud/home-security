@@ -19,6 +19,8 @@ COPY_PATHS = (
     ".github/workflows/docs-validation.yml", "web/package.json", "web/package-lock.json",
     "web/src/lib/validation/authSchemas.ts", "web/src/lib/validation/authSchemas.test.ts",
     "web/src/lib/validation/numericSchemas.ts", "web/src/lib/validation/numericSchemas.test.ts",
+    "web/src/lib/validation/maskSchemas.ts", "web/src/lib/validation/maskSchemas.test.ts",
+    "web/src/components/settings/MotionMaskEditPane.tsx", "web/src/components/settings/ObjectMaskEditPane.tsx",
     "web/vitest.validation.config.ts", "web/vitest.dom-validation.config.ts",
     "web/playwright.validation.config.ts", "web/tests/e2e/login.validation.spec.ts",
     "web/src/components/auth/AuthForm.tsx", "web/src/components/auth/AuthForm.dom.test.tsx",
@@ -272,6 +274,26 @@ class ImportIntegrityTests(unittest.TestCase):
             "echo fake-browser-check",
         ))
         self.assertTrue(any("Web CI missing reviewed dependency/build action" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_mask_privacy_regressions(self):
+        p = self.root / "web/src/lib/validation/maskSchemas.test.ts"
+        p.write_text('test("not the real privacy-mask tests", () => {})')
+        self.assertTrue(any("Missing actual privacy-mask validation regression" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disconnected_motion_mask_ui_validator(self):
+        p = self.root / "web/src/components/settings/MotionMaskEditPane.tsx"
+        p.write_text(p.read_text().replace("createMotionMaskSchema(", "createMotionMaskUnchecked("))
+        self.assertTrue(any("createMotionMaskSchema" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_disconnected_object_mask_ui_validator(self):
+        p = self.root / "web/src/components/settings/ObjectMaskEditPane.tsx"
+        p.write_text(p.read_text().replace("createObjectMaskSchema(", "createObjectMaskUnchecked("))
+        self.assertTrue(any("createObjectMaskSchema" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_missing_mask_test_from_node_config(self):
+        p = self.root / "web/vitest.validation.config.ts"
+        p.write_text(p.read_text().replace('"src/lib/validation/maskSchemas.test.ts",', ""))
+        self.assertTrue(any("isolated Node-only config" in issue for issue in verify_repository(self.root)))
 
     def test_detects_missing_numeric_schema_regressions(self):
         p = self.root / "web/src/lib/validation/numericSchemas.test.ts"

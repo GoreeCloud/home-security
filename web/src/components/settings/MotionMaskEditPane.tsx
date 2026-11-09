@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, FormProvider } from "react-hook-form";
 import { z } from "zod";
+import { createMotionMaskSchema } from "@/lib/validation/maskSchemas";
 import PolygonEditControls from "./PolygonEditControls";
 import { FaCheckCircle } from "react-icons/fa";
 import { MotionMaskFormValuesType, Polygon } from "@/types/canvas";
@@ -131,34 +132,18 @@ export default function MotionMaskEditPane({
     }
   }, [polygon, scaledWidth, scaledHeight]);
 
-  const formSchema = z.object({
-    name: z
-      .string()
-      .min(1, {
-        message: t("masksAndZones.form.id.error.mustNotBeEmpty"),
-      })
-      .refine(
-        (value: string) => {
-          // When editing, allow the same name
-          if (polygon?.name && value === polygon.name) {
-            return true;
-          }
-          // Check if mask ID already exists
-          const existingMaskIds = Object.keys(cameraConfig?.motion.mask || {});
-          return !existingMaskIds.includes(value);
-        },
-        {
-          message: t("masksAndZones.form.id.error.alreadyExists"),
-        },
+  const formSchema = createMotionMaskSchema(
+    polygon?.name,
+    Object.keys(cameraConfig?.motion.mask || {}),
+    {
+      idRequired: t("masksAndZones.form.id.error.mustNotBeEmpty"),
+      idAlreadyExists: t("masksAndZones.form.id.error.alreadyExists"),
+      nameRequired: t("masksAndZones.form.name.error.mustNotBeEmpty"),
+      polygonMustBeFinished: t(
+        "masksAndZones.form.polygonDrawing.error.mustBeFinished",
       ),
-    friendly_name: z.string().min(1, {
-      message: t("masksAndZones.form.name.error.mustNotBeEmpty"),
-    }),
-    enabled: z.boolean(),
-    isFinished: z.boolean().refine((val) => val === true, {
-      message: t("masksAndZones.form.polygonDrawing.error.mustBeFinished"),
-    }),
-  });
+    },
+  );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
