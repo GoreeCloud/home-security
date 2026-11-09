@@ -360,6 +360,10 @@ def verify_repository(root: Path) -> list[str]:
             or "distanceRequired" not in zone_tests
             or "unfinishedPolygon" not in zone_tests
             or "parsed.values" not in zone_tests
+            or "normalized zone ID containing only whitespace" not in zone_tests
+            or "whitespace-only zone display names" not in zone_tests
+            or ".refine((value) => value.length >= 2" not in zone_source
+            or ".refine((value) => value.trim().length >= 2" not in zone_source
         ):
             problems.append("Missing actual zone polygon Zod4 cross-field validation regression")
         numeric_source = text("web/src/lib/validation/numericSchemas.ts")

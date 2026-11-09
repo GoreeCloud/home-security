@@ -399,6 +399,22 @@ class ImportIntegrityTests(unittest.TestCase):
         p.write_text(p.read_text().replace("speedLoiteringConflict", "ruleRemoved"))
         self.assertTrue(any("zone polygon Zod4" in issue for issue in verify_repository(self.root)))
 
+    def test_detects_removed_zone_post_normalization_name_guard(self):
+        p = self.root / "web/src/lib/validation/zoneSchemas.ts"
+        p.write_text(p.read_text().replace(
+            ".refine((value) => value.length >= 2, { message: messages.nameMinLength })",
+            "",
+        ))
+        self.assertTrue(any("zone polygon Zod4" in issue for issue in verify_repository(self.root)))
+
+    def test_detects_removed_whitespace_only_zone_friendly_name_guard(self):
+        p = self.root / "web/src/lib/validation/zoneSchemas.ts"
+        p.write_text(p.read_text().replace(
+            ".refine((value) => value.trim().length >= 2, { message: messages.nameMinLength })",
+            "",
+        ))
+        self.assertTrue(any("zone polygon Zod4" in issue for issue in verify_repository(self.root)))
+
     def test_detects_missing_numeric_schema_regressions(self):
         p = self.root / "web/src/lib/validation/numericSchemas.test.ts"
         p.write_text("test('not the real tests', () => {})")

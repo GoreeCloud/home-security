@@ -19,8 +19,9 @@ export type ZoneValidationMessages = {
 };
 
 /**
- * Retains actual ZoneEditPane input/output coercion and cross-field rules.
- * This builder has no access to cameras, recordings, or backend mutation.
+ * Retains ZoneEditPane input/output coercion and cross-field rules, with
+ * additional post-normalization length validation for blank/short zone IDs
+ * and whitespace-only friendly labels. No backend mutation occurs here.
  */
 export function createZoneSchema(
   enabledCameraNames: readonly string[],
@@ -31,6 +32,7 @@ export function createZoneSchema(
     .string()
     .min(2, { message: messages.nameMinLength })
     .transform((value) => value.trim().replace(/\s+/g, "_"))
+    .refine((value) => value.length >= 2, { message: messages.nameMinLength })
     .refine((value) => !enabledCameraNames.includes(value), {
       message: messages.matchesCameraName,
     })
@@ -44,6 +46,7 @@ export function createZoneSchema(
   const friendlyName = z
     .string()
     .min(2, { message: messages.nameMinLength })
+    .refine((value) => value.trim().length >= 2, { message: messages.nameMinLength })
     .refine((value) => !enabledCameraNames.includes(value), {
       message: messages.matchesCameraName,
     })

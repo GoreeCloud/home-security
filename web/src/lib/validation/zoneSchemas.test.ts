@@ -75,6 +75,14 @@ describe("real zone polygon form Zod4/v5 input-output and safety contract", () =
     if (result.success) expect(result.data.name).toBe("New_Zone");
   });
 
+  it("rejects a normalized zone ID containing only whitespace", () => {
+    expect(issues({ ...base, name: "   " })).toContain(messages.nameMinLength);
+  });
+
+  it("rejects names that become a single character after trimming", () => {
+    expect(issues({ ...base, name: " a " })).toContain(messages.nameMinLength);
+  });
+
   it("rejects a zone name colliding with an existing camera", () => {
     expect(issues({ ...base, name: "camera_front" })).toContain(messages.matchesCameraName);
   });
@@ -96,6 +104,14 @@ describe("real zone polygon form Zod4/v5 input-output and safety contract", () =
     expect(issues({ ...base, friendly_name: "x" })).toContain(messages.nameMinLength);
     expect(issues({ ...base, friendly_name: "another_zone" })).toContain(messages.alreadyExists);
     expect(issues({ ...base, friendly_name: "camera_back" })).toContain(messages.matchesCameraName);
+  });
+
+  it("rejects whitespace-only zone display names", () => {
+    expect(issues({ ...base, friendly_name: "   " })).toContain(messages.nameMinLength);
+  });
+
+  it("rejects display names with fewer than two nonwhitespace characters", () => {
+    expect(issues({ ...base, friendly_name: " a " })).toContain(messages.nameMinLength);
   });
 
   it("rejects unfinished polygons before any save callback", async () => {
